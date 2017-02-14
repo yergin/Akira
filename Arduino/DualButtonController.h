@@ -2,32 +2,35 @@
 
 #include "ButtonController.h"
 
-class DualButtonController
+namespace DualButtons {
+
+enum Event {
+  PRESS = 0,
+  RELEASE,
+  SHORT_RELEASE,
+  SINGLE_TAP,
+  DOUBLE_TAP,
+  HOLD,
+  LONG_RELEASE,
+  EXCLUSIVE_PRESS
+};
+
+enum Button {
+  BUTTON_A = 0,
+  BUTTON_B,
+  BOTH_BUTTONS
+};
+
+enum Request {
+  NO_BUTTON_REQUEST = 0,
+  RESET_BUTTON_ACTIONS,
+  SWAP_BUTTONS_ON_RELEASE
+};
+
+class Controller
 {
 public:
-  enum Event {
-    PRESS = 0,
-    RELEASE,
-    SHORT_RELEASE,
-    SINGLE_TAP,
-    DOUBLE_TAP,
-    HOLD,
-    LONG_RELEASE,
-    EXCLUSIVE_PRESS
-  };
-
-  enum Button {
-    BUTTON_A = 0,
-    BUTTON_B,
-    BOTH_BUTTONS
-  };
-
-  enum Request {
-    RESET_BUTTON_ACTIONS,
-    SWAP_BUTTONS_ON_RELEASE
-  };
-
-  DualButtonController(int pinA, int pinB);
+  Controller(int pinA, int pinB);
   
   bool justOccurred(Button button, Event event) const;
   bool didOccurInAction(Button button, Event event) const;
@@ -53,3 +56,4 @@ private:
   unsigned long _firstButtonPressed = 0;
 };
 
+}

@@ -3,6 +3,7 @@
 #include <FastLED.h>
 #include "Animation.h"
 #include "ButtonController.h"
+#include "StateTransitionTable.h"
 #include "DisplayController.h"
 
 #define SERIAL_DEBUG
@@ -11,8 +12,8 @@ const int LED_CLOCK_PIN = 7;
 const int LED_DATA_PIN = 8;
 const int LED_COUNT = 80;
 const int SD_CHIP_SELECT = BUILTIN_SDCARD;
-const int BUTTON_A = 5;
-const int BUTTON_B = 6;
+const int BUTTON_A_PIN = 5;
+const int BUTTON_B_PIN = 6;
 
 const int BRIGHTNESS = 64;
 
@@ -21,7 +22,7 @@ const unsigned long FRAME_TIME = 1000/FPS;
 
 const int COLOR_COUNT = 15;
 
-enum Colors {
+enum PresetColor {
   COL_BLACK = 0,
   COL_WHITE,
   COL_PINK,
@@ -39,12 +40,12 @@ enum Colors {
   COL_RAINBOW
 };
 
-enum Modes {
-  MODE_OFF = 0,
-  MODE_PERFORM,
-  MODE_PROGRAM_ENTER,
-  MODE_PROGRAM,
-  MODE_BRIGHTNESS
+enum PresetAnimation {
+  ANIMATION_NONE,
+  ANIMATION_THROB,
+  ANIMATION_LONG_CHASE,
+  ANIMATION_SHORT_CHASE,
+  ANIMATION_STROBE
 };
 
 CRGB COLORS[COLOR_COUNT] = { 0x000000, // black
@@ -63,6 +64,7 @@ CRGB COLORS[COLOR_COUNT] = { 0x000000, // black
                              0x8f008f, // magenta
                              0x000000, // rainbow
                            };
+
 
 CRGB leds[LED_COUNT];
 char transitionMask[LED_COUNT];
@@ -216,8 +218,8 @@ void delayForNextFrame() {
 void setup() {
   delay(400);
 
-  buttonA.attach(BUTTON_A, INPUT_PULLUP);
-  buttonB.attach(BUTTON_B, INPUT_PULLUP);
+  buttonA.attach(BUTTON_A_PIN, INPUT_PULLUP);
+  buttonB.attach(BUTTON_B_PIN, INPUT_PULLUP);
   
   #ifdef SERIAL_DEBUG
   Serial.begin(9600);
