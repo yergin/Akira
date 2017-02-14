@@ -6,58 +6,50 @@ class DualButtonController
 {
 public:
   enum Event {
-    A_PRESS = 0,
-    A_SHORT_RELEASE,
-    A_LONG_RELEASE,
-    A_HOLD,
-    B_PRESS,
-    B_SHORT_RELEASE,
-    B_LONG_RELEASE,
-    B_HOLD,
-    AB_PRESS,
-    AB_SHORT_RELEASE,
-    AB_LONG_RELEASE,
-    AB_HOLD
+    PRESS = 0,
+    RELEASE,
+    SHORT_RELEASE,
+    SINGLE_TAP,
+    DOUBLE_TAP,
+    HOLD,
+    LONG_RELEASE,
+    EXCLUSIVE_PRESS
   };
 
-  typedef int State;
-  static constexpr State A_UP_MASK = 0x01;
-  static constexpr State A_DOWN_MASK = 0x02;
-  static constexpr State A_HOLD_MASK = 0x04;
-  static constexpr State B_UP_MASK = 0x10;
-  static constexpr State B_DOWN_MASK = 0x20;
-  static constexpr State B_HOLD_MASK = 0x40;
+  enum Button {
+    BUTTON_A = 0,
+    BUTTON_B,
+    BOTH_BUTTONS
+  };
 
   enum Request {
-    SKIP_RELEASE_EVENT,
-    SKIP_HOLD_EVENT,
+    RESET_BUTTON_ACTIONS,
     SWAP_BUTTONS_ON_RELEASE
   };
 
   DualButtonController(int pinA, int pinB);
   
-  bool eventDidOccur(Event event) const;
-  State state() const { return _state; }
+  bool justOccurred(Button button, Event event) const;
+  bool didOccurInAction(Button button, Event event) const;
   void performRequest(Request request);
-  bool areButtonsSwapped() { return _buttonsSwapped; }
+  bool areButtonsSwapped() const { return _buttonsSwapped; }
   void update();
 
 private:
-  void updateState();
-  void updateEventVector();
   void swapButtons();
+  void setEventForBothButtons(Event event);
+  void clearEventsForBothButtons() { _currentEventsForBothButtons = 0; }
+  void resetActionsForBothButtons() { _actionEventsForBothButtons = 0; }
   
   ButtonController _button1;
   ButtonController _button2;
-  ButtonController* _buttonA;
-  ButtonController* _buttonB;
-  State _state = 0;
-  int _eventVector = 0;
+  ButtonController* _buttonA = 0;
+  ButtonController* _buttonB = 0;
   int _simultaneousThreshold = 100;
-  bool _switchedButtons = false;
-  bool _skipReleaseEvent = false;
-  bool _skipHoldEvent = false;
   bool _buttonsSwapped = false;
   bool _swapButtonsOnRelease = false;
+  unsigned long _currentEventsForBothButtons = 0;
+  unsigned long _actionEventsForBothButtons = 0;
+  unsigned long _firstButtonPressed = 0;
 };
 

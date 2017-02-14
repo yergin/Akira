@@ -10,7 +10,7 @@
 const int LED_CLOCK_PIN = 7;
 const int LED_DATA_PIN = 8;
 const int LED_COUNT = 80;
-const int SD_CHIP_SELECT = 10;
+const int SD_CHIP_SELECT = BUILTIN_SDCARD;
 const int BUTTON_A = 5;
 const int BUTTON_B = 6;
 
@@ -46,8 +46,6 @@ enum Modes {
   MODE_PROGRAM,
   MODE_BRIGHTNESS
 };
-
-
 
 CRGB COLORS[COLOR_COUNT] = { 0x000000, // black
                              0x5f5f5f, // white
@@ -188,15 +186,15 @@ void respondToButtons() {
   buttonA.update();
   buttonB.update();
   
-  if (buttonA.wasShortRelease()) {
+  if (buttonA.justOccurred(ButtonController::SINGLE_TAP)) {
     color1 = (color1 + 1) % COLOR_COUNT;
   }
   
-  if (buttonA.wasHeld()) {
+  if (buttonA.justOccurred(ButtonController::DOUBLE_TAP)) {
     color2 = (color2 + 1) % COLOR_COUNT;
   }
   
-  if (buttonB.wasPressed()) {
+  if (buttonA.justOccurred(ButtonController::HOLD)) {
     animationIndex = (animationIndex + 1) % ANIMATION_COUNT;
     display.setNextAnimation(animations[animationIndex]);
   }

@@ -1,60 +1,56 @@
 #pragma once
 
 #include <Bounce2.h>
+#include <cinttypes>
 
 class ButtonController : public Bounce
 {
 public:
   enum Event {
     PRESS = 0,
+    RELEASE,
     SHORT_RELEASE,
+    SINGLE_TAP,
+    DOUBLE_TAP,
+    HOLD,
     LONG_RELEASE,
-    HOLD
+    USER_EVENT
   };
 
-  typedef int State;
-  static constexpr State UP_MASK = 0x01;
-  static constexpr State DOWN_MASK = 0x02;
-  static constexpr State HELD_MASK = 0x04;
-  
-  static constexpr State UP = UP_MASK;
-  static constexpr State DOWN = DOWN_MASK;
-  static constexpr State DOWN_AND_HELD = DOWN_MASK | HELD_MASK;
-  
   class Listener
   {
   public:
-    virtual void buttonEvent(Event event, State state) = 0;
+    virtual void buttonEvent(Event event, ButtonController* controller) = 0;
   };
   
-  ButtonController();
+  ButtonController() {}
 
   void update();
   
   bool isDown() { return read() ^ _inverted; }
-  bool isHeld() { return _hold; }
-  
   bool wasPressed() { return _inverted ? fell() : rose(); }
-  bool wasShortRelease() { return wasReleased() && !_wasLongRelease; }
-  bool wasLongRelease() { return wasReleased() && _wasLongRelease; }
-  bool wasReleased() { return !_skipReleaseEvent && (_inverted ? rose() : fell()); }
-  bool wasHeld() { return !_skipHoldEvent && (_hold && _heldSet); }
+  bool wasReleased() { return _inverted ? rose() : fell(); }
+  bool justOccurred(Event event) const { return _currentEvents & (1 << static_cast<int>(event)); }
+  bool hasActionStarted() const { return _actionEvents != 0; }
+  bool didOccurInAction(Event event) const { return _actionEvents & (1 << static_cast<int>(event)); }
   
-  void setListener(Listener* listener);
-  void skipReleaseEvent();
-  void skipHoldEvent();
-
-  void setHoldTime(unsigned int ms);
-  void setInverted(bool inverted);
+  void setHoldTime(unsigned int ms) { _holdTime = ms; }
+  void setDoubleTapTime(unsigned int ms) { _doubleTapTime = ms; }
+  void setInverted(bool inverted) { _inverted = inverted; }
+  void setListener(Listener* listener) { _listener = listener; }
+  void resetAction() { _actionEvents = 0; }
+  void setUserEvent() { setEvent(USER_EVENT); }
 
 private:
+  void setEvent(Event event);
+  void clearEvents() { _currentEvents = 0; }
+
   Listener* _listener = 0;
   bool _inverted = true;
-  bool _hold = false;
-  bool _heldSet = false;
-  unsigned int _holdTime = 500;
-  bool _skipReleaseEvent = false;
-  bool _skipHoldEvent = false;
-  bool _wasLongRelease = false;
+  unsigned int _holdTime = 300;
+  unsigned int _doubleTapTime = 150;
+  uint8_t _currentEvents = 0;
+  uint8_t _actionEvents = 0;
+  bool _resetAction = false;
 };
 
