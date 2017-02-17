@@ -1,3 +1,5 @@
+#define SERIAL_DEBUG
+
 #include <SD.h>
 #include <SPI.h>
 #include <FastLED.h>
@@ -6,16 +8,16 @@
 #include "StateTransitionTable.h"
 #include "DisplayController.h"
 
-#define SERIAL_DEBUG
-
 const int LED_CLOCK_PIN = 7;
 const int LED_DATA_PIN = 8;
-const int LED_COUNT = 80;
+const int LED_ENABLE_PIN = 9;
+const int LED_SENSE_PIN = 10;
+const int LED_COUNT = 72;
 const int SD_CHIP_SELECT = BUILTIN_SDCARD;
 const int BUTTON_A_PIN = 5;
 const int BUTTON_B_PIN = 6;
 
-const int BRIGHTNESS = 64;
+const int BRIGHTNESS = 255;
 
 const int FPS = 48;
 const unsigned long FRAME_TIME = 1000/FPS;
@@ -71,8 +73,8 @@ char transitionMask[LED_COUNT];
 
 File dataFile;
 
-ButtonController buttonA;
-ButtonController buttonB;
+Momentary buttonA;
+Momentary buttonB;
 DisplayController display;
 
 int color1 = 0;
@@ -187,18 +189,29 @@ int animationIndex = 0;
 void respondToButtons() {
   buttonA.update();
   buttonB.update();
+
+  if (!areLEDsOn()) {
+    if (buttonA.triggered(Momentary::PRESS)) {
+      turnLEDsOn();
+      buttonA.reset();
+    }
+    return;
+  }
   
-  if (buttonA.justOccurred(ButtonController::SINGLE_TAP)) {
+  if (buttonA.triggered(Momentary::SINGLE_TAP)) {
     color1 = (color1 + 1) % COLOR_COUNT;
   }
   
-  if (buttonA.justOccurred(ButtonController::DOUBLE_TAP)) {
+  if (buttonA.triggered(Momentary::DOUBLE_TAP)) {
     color2 = (color2 + 1) % COLOR_COUNT;
   }
   
-  if (buttonA.justOccurred(ButtonController::HOLD)) {
+  if (buttonA.triggered(Momentary::HOLD)) {
+    
     animationIndex = (animationIndex + 1) % ANIMATION_COUNT;
     display.setNextAnimation(animations[animationIndex]);
+    
+    //turnLEDsOff();
   }
 }
 
@@ -215,11 +228,36 @@ void delayForNextFrame() {
   lastMillis = t;  
 }
 
+bool areLEDsOn() {
+  return digitalRead(LED_SENSE_PIN) == LOW;
+}
+
+void turnLEDsOff() {
+  pinMode(LED_CLOCK_PIN, INPUT_PULLUP);
+  pinMode(LED_DATA_PIN, INPUT_PULLUP);
+  digitalWrite(LED_ENABLE_PIN, LOW);
+}
+
+void turnLEDsOn() {
+  digitalWrite(LED_ENABLE_PIN, HIGH);
+  delay(1);
+  if (!areLEDsOn()) {
+    Serial.print("Attempted to enable LEDs but none detected.\n");
+    return;
+  }
+  pinMode(LED_CLOCK_PIN, OUTPUT);
+  pinMode(LED_DATA_PIN, OUTPUT);
+}
+
 void setup() {
   delay(400);
 
   buttonA.attach(BUTTON_A_PIN, INPUT_PULLUP);
   buttonB.attach(BUTTON_B_PIN, INPUT_PULLUP);
+
+  turnLEDsOff();
+  pinMode(LED_ENABLE_PIN, OUTPUT);
+  pinMode(LED_SENSE_PIN, INPUT_PULLUP);
   
   #ifdef SERIAL_DEBUG
   Serial.begin(9600);
@@ -232,8 +270,12 @@ void setup() {
   else {
     Serial.print("SD card could be read.\n");
   }
- 
-  FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR, DATA_RATE_MHZ(1)>(leds, LED_COUNT);
+
+  turnLEDsOn();
+  if (areLEDsOn()) {
+    FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR, DATA_RATE_MHZ(1)>(leds, LED_COUNT);
+  }
+  
   FastLED.setBrightness(BRIGHTNESS);
   
   FastLED.showColor(COLORS[COL_WHITE]);

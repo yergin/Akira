@@ -1,12 +1,14 @@
 #include "ButtonController.h"
 #include "Arduino.h"
 
-void ButtonController::update() {
+#define SERIAL_DEBUG
+
+void Momentary::update() {
   unsigned long elasped = millis() - previous_millis;
     
-  if (_resetAction) {
-    resetAction();
-    _resetAction = false;
+  if (_reset) {
+    reset();
+    _reset = false;
   }
   
   Bounce::update();
@@ -14,46 +16,59 @@ void ButtonController::update() {
   clearEvents();
 
   if (wasPressed()) {
-    setEvent(PRESS);
+    triggerEvent(PRESS);
       
-    if (didOccurInAction(RELEASE) && elasped < _doubleTapTime) {
-      setEvent(DOUBLE_TAP);
+    if (gestureIncludes(RELEASE) && elasped < _doubleTapTime) {
+      triggerEvent(DOUBLE_TAP);
     }
   }
   else if (wasReleased()) {
-    if (!hasActionStarted()) {
+    if (!gestureStarted()) {
       return;
     }
-    setEvent(RELEASE);
+    triggerEvent(RELEASE);
       
-    if (didOccurInAction(HOLD)) {
-      setEvent(LONG_RELEASE);
-      _resetAction = true;
+    if (gestureIncludes(HOLD)) {
+      triggerEvent(LONG_RELEASE);
+      _reset = true;
     }
-    else if (didOccurInAction(DOUBLE_TAP)) {
-      _resetAction = true;
+    else if (gestureIncludes(DOUBLE_TAP)) {
+      _reset = true;
     }
     else {
-      setEvent(SHORT_RELEASE);
+      triggerEvent(SHORT_RELEASE);
     }
   }
   else if (isDown()) {
-    if (!didOccurInAction(HOLD) && hasActionStarted() && !didOccurInAction(RELEASE) && elasped >= _holdTime) {
-      setEvent(HOLD);
+    if (gestureStarted() && !gestureIncludes(HOLD) && !gestureIncludes(RELEASE) && elasped >= _holdTime) {
+      triggerEvent(HOLD);
     }
   }
   else {
-    if (didOccurInAction(PRESS) && elasped >= _doubleTapTime) {
-      setEvent(SINGLE_TAP);
-      _resetAction = true;
+    if (gestureIncludes(PRESS) && elasped >= _doubleTapTime) {
+      triggerEvent(SINGLE_TAP);
+      _reset = true;
     }
   }
 }
 
-void ButtonController::setEvent(Event event) {
+void Momentary::triggerEvent(Event event) {
   _currentEvents |= 1 << static_cast<int>(event);
-  _actionEvents |= 1 << static_cast<int>(event);
+  _gestureEvents |= 1 << static_cast<int>(event);
+#ifdef SERIAL_DEBUG
+  Serial.print("Momentary: Triggering event: ");
+  switch (event) {
+    case PRESS: Serial.print("PRESS\n"); break;
+    case RELEASE: Serial.print("RELEASE\n"); break;
+    case SHORT_RELEASE: Serial.print("SHORT_RELEASE\n"); break;
+    case SINGLE_TAP: Serial.print("SINGLE_TAP\n"); break;
+    case DOUBLE_TAP: Serial.print("DOUBLE_TAP\n"); break;
+    case HOLD: Serial.print("HOLD\n"); break;
+    case LONG_RELEASE: Serial.print("LONG_RELEASE\n"); break;
+    case USER_EVENT: Serial.print("USER_EVENT\n"); break;
+  }
+#endif
   if (_listener) {
-    _listener->buttonEvent(event, this);
+    _listener->buttonEvent(this, event);
   }
 }
