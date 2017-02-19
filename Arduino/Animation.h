@@ -1,7 +1,6 @@
 #pragma once
 
 #include <FastLED.h>
-#include "Transition.h"
 
 class Animation
 {
@@ -17,7 +16,6 @@ public:
 
   void setMask(char* mask, MaskOperation op);
   virtual void draw() = 0;
-  virtual Transition* transition() const { return 0; }
 
   int ledCount() const { return _ledCount; }
 

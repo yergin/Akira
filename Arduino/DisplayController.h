@@ -1,19 +1,19 @@
 #pragma once
 
-#include "Animation.h"
+#include "Animations.h"
 
 class DisplayController
 {
 public:
   DisplayController() {}
 
-  void setNextAnimation(Animation* animation);
+  void setNextAnimation(AkiraAnimation* animation);
   void update();
 
 private:
   Transition* transition() const { return _targetAnimation && _sourceAnimation ? _targetAnimation->transition() : 0; }
 
-  Animation* _targetAnimation = 0;
-  Animation* _sourceAnimation = 0;
+  AkiraAnimation* _targetAnimation = 0;
+  AkiraAnimation* _sourceAnimation = 0;
 };
 

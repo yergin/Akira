@@ -1,0 +1,20 @@
+#pragma once
+
+#include <FastLED.h>
+
+constexpr int LED_CLOCK_PIN = 7;
+constexpr int LED_DATA_PIN = 8;
+constexpr int LED_ENABLE_PIN = 9;
+constexpr int LED_SENSE_PIN = 10;
+constexpr int BUTTON_A_PIN = 5;
+constexpr int BUTTON_B_PIN = 6;
+
+constexpr int LED_COUNT = 72;
+constexpr int BRIGHTNESS = 255;
+
+constexpr int FPS = 48;
+constexpr unsigned long FRAME_TIME = 1000/FPS;
+
+extern CRGB leds[LED_COUNT];
+extern char transitionMask[LED_COUNT];
+

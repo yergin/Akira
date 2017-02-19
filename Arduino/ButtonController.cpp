@@ -55,6 +55,7 @@ void Momentary::update() {
 void Momentary::triggerEvent(Event event) {
   _currentEvents |= 1 << static_cast<int>(event);
   _gestureEvents |= 1 << static_cast<int>(event);
+  
 #ifdef SERIAL_DEBUG
   Serial.print("Momentary: Triggering event: ");
   switch (event) {
@@ -68,6 +69,7 @@ void Momentary::triggerEvent(Event event) {
     case USER_EVENT: Serial.print("USER_EVENT\n"); break;
   }
 #endif
+
   if (_listener) {
     _listener->buttonEvent(this, event);
   }
