@@ -3,7 +3,7 @@
 class Transition
 {
 public:
-  Transition(char* mask, int ledCount);
+  Transition(char* mask, unsigned int ledCount);
 
   virtual void reset() = 0;
   virtual void advance() = 0;
@@ -12,7 +12,7 @@ public:
   char* mask() const { return _mask; }
 
 protected:
-  int _ledCount;
+  unsigned int _ledCount;
   char* _mask;
 };
 

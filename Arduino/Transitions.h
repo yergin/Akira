@@ -22,14 +22,21 @@ public:
   unsigned int duration() const { return 12; }
 };
 
-
 class SlowFade : public Fade
 {
 public:
-  unsigned int duration() const { return 48; }
+  unsigned int duration() const { return 24; }
 };
 
+class QuickSwipe : public AkiraTransition
+{
+public:
+  void update();
+  unsigned int duration() const { return LED_COUNT; }
+};
 
 extern QuickFade quickFade;
+extern SlowFade slowFade;
+extern QuickSwipe quickSwipe;
 
 

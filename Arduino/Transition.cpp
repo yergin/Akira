@@ -1,6 +1,6 @@
 #include "Transition.h"
 
-Transition::Transition(char* mask, int ledCount)
+Transition::Transition(char* mask, unsigned int ledCount)
   : _ledCount(ledCount), _mask(mask)
 {}
 

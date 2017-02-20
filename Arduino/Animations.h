@@ -77,7 +77,7 @@ protected:
 class ThrobAnimation : public AkiraAnimation
 {
 public:
-  Transition* transition() const { return &quickFade; }
+  Transition* transition() const { return &slowFade; }
 
 protected:
   void draw(unsigned int frame);
@@ -99,7 +99,7 @@ protected:
 class ShortChaseAnimation : public AkiraAnimation
 {
 public:
-  Transition* transition() const { return &quickFade; }
+  Transition* transition() const { return &slowFade; }
 
 protected:
   void draw(unsigned int frame);
@@ -109,7 +109,7 @@ protected:
 class LongChaseAnimation : public AkiraAnimation
 {
 public:
-  Transition* transition() const { return &quickFade; }
+  Transition* transition() const { return &quickSwipe; }
   
 protected:
   void draw(unsigned int frame);
