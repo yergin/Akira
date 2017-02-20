@@ -63,10 +63,10 @@ void delayForNextFrame() {
   unsigned long t = millis();
   if (t - lastMillis > FRAME_TIME) {
     //Serial.println("Frame delayed!");
-    delay(1);
+    FastLED.delay(1);
   }
   else {
-    delay(FRAME_TIME - (t - lastMillis));
+    FastLED.delay(FRAME_TIME - (t - lastMillis));
   }
   lastMillis = t;  
 }
