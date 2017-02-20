@@ -18,7 +18,7 @@ enum Event {
 enum Button {
   BUTTON_A = 0,
   BUTTON_B,
-  BOTH_BUTTONS
+  BUTTONS_A_B_TOGETHER
 };
 
 enum Request {
@@ -31,18 +31,21 @@ class Controller
 {
 public:
   Controller(int pinA, int pinB);
-  
+
+  bool triggered() const { return triggered(BUTTON_A) || triggered(BUTTON_B) || triggered(BUTTONS_A_B_TOGETHER); }
+  bool triggered(Button button) const;
   bool triggered(Button button, Event event) const;
   bool gestureIncludes(Button button, Event event) const;
   void performRequest(Request request);
   bool areButtonsSwapped() const { return _buttonsSwapped; }
   void update();
+  void reset();
 
 private:
   void swapButtons();
-  void triggerEventForBothButtons(Event event);
-  void clearEventsForBothButtons() { _currentEventsForBothButtons = 0; }
-  void resetBothButtons() { _gestureEventsForBothButtons = 0; }
+  void triggerEventForButtonsABTogether(Event event);
+  void clearEventsForButtonsABTogether() { _currentEventsForButtonsABTogether = 0; }
+  void resetButtonsABTogether() { _gestureEventsForButtonsABTogether = 0; }
   
   Momentary _button1;
   Momentary _button2;
@@ -51,8 +54,8 @@ private:
   int _simultaneousThreshold = 100;
   bool _buttonsSwapped = false;
   bool _swapButtonsOnRelease = false;
-  unsigned long _currentEventsForBothButtons = 0;
-  unsigned long _gestureEventsForBothButtons = 0;
+  unsigned long _currentEventsForButtonsABTogether = 0;
+  unsigned long _gestureEventsForButtonsABTogether = 0;
   unsigned long _firstButtonPressed = 0;
 };
 

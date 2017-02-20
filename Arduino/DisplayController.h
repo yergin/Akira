@@ -2,10 +2,10 @@
 
 #include "Animations.h"
 
-class DisplayController
+class DisplayControllerClass
 {
 public:
-  DisplayController() {}
+  DisplayControllerClass() {}
 
   void setNextAnimation(AkiraAnimation* animation);
   void update();
@@ -17,3 +17,4 @@ private:
   AkiraAnimation* _sourceAnimation = 0;
 };
 
+extern DisplayControllerClass Display;

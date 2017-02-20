@@ -45,7 +45,8 @@ void GradientAnimation::draw(unsigned int /*frame*/) {
 }
 
 void ThrobAnimation::draw(unsigned int frame) {
-  int alpha = (abs(frame - 63) << 2) + 2;
+  int v = -63 + frame;
+  int alpha = (abs(v) << 2) + 2;
   CRGB pixel = 0;
   colorScaleSum(&pixel, color1(), alpha);
   colorScaleSum(&pixel, color2(), 255 - alpha);    
@@ -78,7 +79,7 @@ void LongChaseAnimation::draw(unsigned int frame) {
   
 AkiraAnimation* AnimationFactoryClass::create(AnimationPreset preset) {
   switch(preset) {
-    case PRESET_ANIM_NONE: return new GradientAnimation;
+    case PRESET_ANIM_GRADIENT: return new GradientAnimation;
     case PRESET_ANIM_THROB: return new ThrobAnimation;
     case PRESET_ANIM_LONG_CHASE: return new LongChaseAnimation;
     case PRESET_ANIM_SHORT_CHASE: return new ShortChaseAnimation;

@@ -1,6 +1,9 @@
 #pragma once
 
+#include <Arduino.h>
 #include <FastLED.h>
+
+#define SERIAL_DEBUG
 
 constexpr int LED_CLOCK_PIN = 7;
 constexpr int LED_DATA_PIN = 8;

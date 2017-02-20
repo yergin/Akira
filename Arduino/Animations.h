@@ -26,7 +26,7 @@ enum ColorPreset {
 };
 
 enum AnimationPreset {
-  PRESET_ANIM_NONE,
+  PRESET_ANIM_GRADIENT,
   PRESET_ANIM_THROB,
   PRESET_ANIM_LONG_CHASE,
   PRESET_ANIM_SHORT_CHASE,
@@ -81,7 +81,7 @@ public:
 
 protected:
   void draw(unsigned int frame);
-  unsigned int loopLength() const { return 127; } 
+  unsigned int loopLength() const { return 126; } 
 };
 
 class StrobeAnimation : public AkiraAnimation

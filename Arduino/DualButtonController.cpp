@@ -12,15 +12,16 @@ Controller::Controller(int pinA, int pinB) {
 
 void Controller::update() {
   bool gestureStarted = _buttonA->gestureStarted() || _buttonB->gestureStarted();
-
+  
+  clearEventsForButtonsABTogether();
   _buttonA->update();
   _buttonB->update();
 
-  bool anyButtonJustPressed = _buttonA->triggered(Momentary::PRESS) || _buttonA->triggered(Momentary::PRESS);
-  bool bothButtonsJustPressed = _buttonA->triggered(Momentary::PRESS) && _buttonA->triggered(Momentary::PRESS);
+  bool anyButtonJustPressed = _buttonA->triggered(Momentary::PRESS) || _buttonB->triggered(Momentary::PRESS);
+  bool bothButtonsJustPressed = _buttonA->triggered(Momentary::PRESS) && _buttonB->triggered(Momentary::PRESS);
 
   if (bothButtonsJustPressed) {
-    triggerEventForBothButtons(PRESS);
+    triggerEventForButtonsABTogether(PRESS);
   }
   else if (anyButtonJustPressed) {
     
@@ -50,12 +51,30 @@ void Controller::update() {
   */
 }
 
+void Controller::reset() {
+  _buttonA->reset();
+  _buttonB->reset();
+  resetButtonsABTogether();
+}
+
 void Controller::swapButtons() {
   _swapButtonsOnRelease = false;
   _buttonsSwapped = !_buttonsSwapped;
   
   _buttonA = _buttonsSwapped ? &_button2 : &_button1;
   _buttonB = _buttonsSwapped ? &_button1 : &_button2;
+}
+
+bool Controller::triggered(Button button) const
+{
+  switch (button) {
+    case BUTTON_A: return _buttonA->triggered();
+    case BUTTON_B: return _buttonB->triggered();
+    default:
+      break;
+  }
+
+  return _currentEventsForButtonsABTogether != 0;
 }
 
 bool Controller::triggered(Button button, Event event) const {
@@ -66,7 +85,7 @@ bool Controller::triggered(Button button, Event event) const {
       break;
   }
 
-  return _currentEventsForBothButtons & (1 << static_cast<int>(event));;
+  return _currentEventsForButtonsABTogether & (1 << static_cast<int>(event));;
 }
 
 bool Controller::gestureIncludes(Button button, Event event) const {
@@ -77,18 +96,18 @@ bool Controller::gestureIncludes(Button button, Event event) const {
       break;
   }
 
-  return _gestureEventsForBothButtons & (1 << static_cast<int>(event));;
+  return _gestureEventsForButtonsABTogether & (1 << static_cast<int>(event));
 }
 
-void Controller::triggerEventForBothButtons(Event event) {
-  _currentEventsForBothButtons |= 1 << static_cast<int>(event);
-  _gestureEventsForBothButtons |= 1 << static_cast<int>(event);  
+void Controller::triggerEventForButtonsABTogether(Event event) {
+  _currentEventsForButtonsABTogether |= 1 << static_cast<int>(event);
+  _gestureEventsForButtonsABTogether |= 1 << static_cast<int>(event);  
 }
 
 void Controller::performRequest(Request request) {
   switch (request) {
     case RESET_BUTTONS:
-      resetBothButtons();
+      reset();
       break;
       
     case SWAP_BUTTONS_ON_RELEASE:

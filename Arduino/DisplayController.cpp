@@ -1,6 +1,6 @@
 #include "DisplayController.h"
 
-void DisplayController::setNextAnimation(AkiraAnimation* animation) {
+void DisplayControllerClass::setNextAnimation(AkiraAnimation* animation) {
   if (_sourceAnimation) {
     delete _sourceAnimation;
   }
@@ -22,7 +22,7 @@ void DisplayController::setNextAnimation(AkiraAnimation* animation) {
   }
 }
 
-void DisplayController::update() {
+void DisplayControllerClass::update() {
   if (!_targetAnimation) {
     return;
   }
@@ -42,3 +42,4 @@ void DisplayController::update() {
   }
 }
 
+DisplayControllerClass Display;

@@ -1,59 +1,68 @@
-#define SERIAL_DEBUG
-
 #include <SPI.h>
 
 #include "Config.h"
 #include "Animations.h"
 #include "Cue.h"
-#include "ButtonController.h"
+#include "DualButtonController.h"
 #include "StateTransitionTable.h"
+#include "StateController.h"
 #include "DisplayController.h"
 
-Momentary buttonA;
-Momentary buttonB;
-DisplayController display;
-
-int color1 = 0;
-int color2 = 0;
-
-int animationIndex = 0;
-
+DualButtons::Controller buttons(BUTTON_A_PIN, BUTTON_B_PIN);
 void respondToButtons() {
-  buttonA.update();
-  buttonB.update();
+  using namespace DualButtons;
+  
+  buttons.update();
+  if (!buttons.triggered()) {
+    return;
+  }
 
+  for (int i = 0; i < StateController::transitionTableEntryCount(); ++i) {
+    const StateTransition* transition = &stateTransitionTable[i];
+    if (transition->currentMode != Akira.currentMode() || !buttons.triggered(transition->button, transition->buttonEvent)) {
+      continue;
+    }
+
+    Akira.setOperatingModeWithCommand(transition->nextMode, transition->command);
+    buttons.performRequest(transition->buttonRequest);
+    break;
+  }
+}
+
+  /*
+void setModeAndCommand(Mode nextMode, Command command) {
   if (!areLEDsOn()) {
-    if (buttonA.triggered(Momentary::PRESS) || buttonB.triggered(Momentary::PRESS)) {
+    if (buttons.triggered(BUTTON_A, PRESS) || buttons.triggered(BUTTON_A, PRESS)) {
       turnLEDsOn();
-      buttonA.reset();
-      buttonB.reset();
+      buttons.reset();
     }
     return;
   }
   
-  if (buttonA.triggered(Momentary::SINGLE_TAP)) {
+  if (buttons.triggered(BUTTON_A, SINGLE_TAP)) {
     color1 = (color1 + 1) % COLOR_COUNT;
   }
   
-  if (buttonA.triggered(Momentary::DOUBLE_TAP)) {
+  if (buttons.triggered(BUTTON_A, DOUBLE_TAP)) {
     color2 = (color2 + 1) % COLOR_COUNT;
   }
   
-  if (buttonA.triggered(Momentary::HOLD)) {   
+  if (buttons.triggered(BUTTON_A, HOLD)) {   
     animationIndex = (animationIndex + 1) % PRESET_ANIM_COUNT;
-    display.setNextAnimation(AnimationFactory.create((AnimationPreset)animationIndex));// animations[animationIndex]);
+    display.setNextAnimation(AnimationFactory.create((AnimationPreset)animationIndex));
   }
 
-  if (buttonB.triggered(Momentary::HOLD)) {
+  if (buttons.triggered(BUTTON_B, HOLD)) {
     turnLEDsOff();
   }
 }
+  */
 
 void delayForNextFrame() {
   static unsigned long lastMillis = 0;
   unsigned long t = millis();
   if (t - lastMillis > FRAME_TIME) {
-    Serial.println("Frame delayed!");
+    //Serial.println("Frame delayed!");
     delay(1);
   }
   else {
@@ -62,60 +71,27 @@ void delayForNextFrame() {
   lastMillis = t;  
 }
 
-bool areLEDsOn() {
-  return digitalRead(LED_SENSE_PIN) == LOW;
-}
-
-void turnLEDsOff() {
-  pinMode(LED_CLOCK_PIN, INPUT);
-  pinMode(LED_DATA_PIN, INPUT);
-  digitalWrite(LED_ENABLE_PIN, LOW);
-}
-
-void turnLEDsOn() {
-  digitalWrite(LED_ENABLE_PIN, HIGH);
-  delay(1);
-  if (!areLEDsOn()) {
-    Serial.print("Attempted to enable LEDs but none detected.\n");
-    return;
-  }
-  pinMode(LED_CLOCK_PIN, OUTPUT);
-  pinMode(LED_DATA_PIN, OUTPUT);
-}
-
 void setup() {
   delay(400);
 
-  buttonA.attach(BUTTON_A_PIN, INPUT_PULLUP);
-  buttonB.attach(BUTTON_B_PIN, INPUT_PULLUP);
-
-  turnLEDsOff();
   pinMode(LED_ENABLE_PIN, OUTPUT);
   pinMode(LED_SENSE_PIN, INPUT_PULLUP);
   
-  #ifdef SERIAL_DEBUG
+#ifdef SERIAL_DEBUG
   Serial.begin(9600);
   Serial.print("Setting up...\n");
-  #endif
+#endif
 
-  turnLEDsOn();
-  if (areLEDsOn()) {
-    FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR, DATA_RATE_MHZ(1)>(leds, LED_COUNT);
-  }
-  
-  FastLED.setBrightness(BRIGHTNESS);
-  
-  FastLED.showColor(COLOR[PRESET_COL_WHITE]);
-  delay(400);  
-  FastLED.showColor(COLOR[PRESET_COL_BLACK]);
+  FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR, DATA_RATE_MHZ(1)>(leds, LED_COUNT);
 
-  display.setNextAnimation(AnimationFactory.create((AnimationPreset)animationIndex));
+  Akira.initializeModes();
+  Akira.setOperatingMode(MODE_OFF);
 }
 
 void loop() {
   respondToButtons();
 
-  display.update();
+  Display.update();
   FastLED.show();
 
   delayForNextFrame();
