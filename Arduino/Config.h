@@ -18,6 +18,11 @@ constexpr int BRIGHTNESS = 255;
 constexpr int FPS = 48;
 constexpr unsigned long FRAME_TIME = 1000/FPS;
 
+constexpr int EEPROM_ADDR_BRIGHTNESS = 0;
+constexpr int EEPROM_ADDR_CUE_COUNT = 16;
+constexpr int EEPROM_ADDR_FIRST_CUE = 18;
+constexpr int MAX_CUES = 100;
+
 extern CRGB leds[LED_COUNT];
 extern char transitionMask[LED_COUNT];
 

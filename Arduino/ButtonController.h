@@ -29,7 +29,7 @@ public:
   void update();
   void reset() { _gestureEvents = 0; }
   
-  bool isDown() { return read() ^ _inverted; }
+  bool isDown() { return read() != _inverted; }
   bool wasPressed() { return _inverted ? fell() : rose(); }
   bool wasReleased() { return _inverted ? rose() : fell(); }
   bool triggered() const { return _currentEvents != 0; }

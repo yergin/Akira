@@ -1,6 +1,5 @@
 #include "Animations.h"
-
-AnimationFactoryClass AnimationFactory;
+#include <EEPROM.h>
 
 const CRGB COLOR[COLOR_COUNT] = {  0x000000, // black
                                    0x5f5f5f, // white
@@ -18,14 +17,55 @@ const CRGB COLOR[COLOR_COUNT] = {  0x000000, // black
                                    0x000000, // rainbow
                                 };
 
+constexpr AkiraAnimation::CueDescription AkiraAnimation::_demo[];
+
+AkiraAnimation* AkiraAnimation::create(AnimationPreset preset) {
+  AkiraAnimation* animation = 0;
+  switch(preset) {
+    case PRESET_ANIM_GRADIENT: animation = new GradientAnimation; break;
+    case PRESET_ANIM_THROB: animation = new ThrobAnimation; break;
+    case PRESET_ANIM_LONG_CHASE: animation = new LongChaseAnimation; break;
+    case PRESET_ANIM_SHORT_CHASE: animation = new ShortChaseAnimation; break;
+    case PRESET_ANIM_STROBE: animation = new StrobeAnimation; break;
+    default: animation = new GradientAnimation; break;
+  }
+
+  animation->_cue.descr.animation = preset;
+  return animation;
+}
+
+AkiraAnimation* AkiraAnimation::loadFromEeprom(int *addr) {
+  Cue cue;
+  cue.data[0] = EEPROM.read(*addr);
+  cue.data[1] = EEPROM.read(*addr + 1);
+  *addr += 2;
+
+  AkiraAnimation* animation = AkiraAnimation::create(static_cast<AnimationPreset>(cue.descr.animation));
+  animation->setColorPreset1(static_cast<ColorPreset>(cue.descr.color1));
+  animation->setColorPreset2(static_cast<ColorPreset>(cue.descr.color2));
+  return animation;  
+}
+
+AkiraAnimation* AkiraAnimation::loadDemoCue(int index) {
+  AkiraAnimation* animation = AkiraAnimation::create(static_cast<AnimationPreset>(_demo[index].animation));
+  animation->setColorPreset1(static_cast<ColorPreset>(_demo[index].color1));
+  animation->setColorPreset2(static_cast<ColorPreset>(_demo[index].color2));
+  return animation;
+}
+
+void AkiraAnimation::saveToEeprom(int *addr) {
+  EEPROM.write(*addr, _cue.data[0]);
+  EEPROM.write(*addr, _cue.data[1]);
+  *addr += 2;
+}
 
 void AkiraAnimation::setColorPreset1(ColorPreset preset) {
-  _colorPreset1 = preset;
+  _cue.descr.color1 = preset;
   colorPresetsChanged();
 }
 
 void AkiraAnimation::setColorPreset2(ColorPreset preset) {
-  _colorPreset2 = preset;
+  _cue.descr.color2 = preset;
   colorPresetsChanged();    
 }
 
@@ -76,18 +116,4 @@ void LongChaseAnimation::draw(unsigned int frame) {
     writeLed(i, (i - frame + 120) % 120 < 60 ? color1() : color2());
   }
 }
-  
-AkiraAnimation* AnimationFactoryClass::create(AnimationPreset preset) {
-  switch(preset) {
-    case PRESET_ANIM_GRADIENT: return new GradientAnimation;
-    case PRESET_ANIM_THROB: return new ThrobAnimation;
-    case PRESET_ANIM_LONG_CHASE: return new LongChaseAnimation;
-    case PRESET_ANIM_SHORT_CHASE: return new ShortChaseAnimation;
-    case PRESET_ANIM_STROBE: return new StrobeAnimation;
-    default:
-      ;//error!
-  }
-  return new GradientAnimation();
-}
-
 

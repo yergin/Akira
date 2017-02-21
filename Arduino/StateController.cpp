@@ -1,20 +1,35 @@
 #include "StateController.h"
 #include "Config.h"
-#include "CueDisplay.h"
+#include "DisplayController.h"
+#include "DualButtonController.h"
 #include <EEPROM.h>
+
+SleepMode sleepMode;
+PerformMode performMode;
+BrightnessMode brightnessMode;
+ProgramEnterMode programEnterMode;
+ProgramMode programMode;
+
+OperatingMode* StateController::_modes[MODE_COUNT] = {
+  &sleepMode,
+  &performMode,
+  &brightnessMode,
+  &programEnterMode,
+  &programMode
+};
 
 void OperatingMode::execute(Command command) {
   switch (command) {
     case PERFORM_FIRST_CUE:
-      CueDisplay.showFirst();
+      Display.showFirstCue();
       break;
       
     case PERFORM_NEXT_CUE:
-      CueDisplay.showNext();
+      Display.showNextCue();
       break;
 
     case PERFORM_PREVIOUS_CUE:
-      CueDisplay.showPrevious();
+      Display.showPreviousCue();
       break;
       
     default:
@@ -22,81 +37,128 @@ void OperatingMode::execute(Command command) {
   }
 }
 
-void OffMode::enter(Command command) {
+void SleepMode::enter(Command command) {
   execute(command);
   sleep();
 }
 
-void OffMode::leave() {
+void SleepMode::leave() {
   wakeUp();
 }
 
-void OffMode::sleep() {
+void SleepMode::sleep() {
   Serial.println("Going to sleep...");
-  pinMode(LED_CLOCK_PIN, INPUT);
-  pinMode(LED_DATA_PIN, INPUT);
-  digitalWrite(LED_ENABLE_PIN, LOW);
-  delay(1);
-  if (!areLedsOn()) {
-    Serial.print("Failed to power down LEDs.\n");
-    return;
-  }
+  Akira.turnLedsOff();
 }
 
-void OffMode::wakeUp() {
+void SleepMode::wakeUp() {
   Serial.println("Waking up...");
-  digitalWrite(LED_ENABLE_PIN, HIGH);
-  delay(1);
-  if (!areLedsOn()) {
-    Serial.print("Attempted to power up LEDs but no voltage detected.\n");
-    return;
-  }
-  pinMode(LED_CLOCK_PIN, OUTPUT);
-  pinMode(LED_DATA_PIN, OUTPUT);
-}
-
-bool OffMode::areLedsOn() const {
-  return digitalRead(LED_SENSE_PIN) == LOW;
+  Akira.turnLedsOn();
 }
 
 constexpr uint8_t BrightnessMode::_levels[];
+constexpr int BrightnessMode::DEFAULT_SETTING;
 
 void BrightnessMode::initialize() {
-  _currentLevel = EEPROM.read(0);
-  if (_currentLevel >= numLevels()) {
-    _currentLevel = numLevels() - 1;
-  }
-  FastLED.setBrightness(level());
+  load();
+  apply();
 }
 
 void BrightnessMode::execute(Command command) {
   switch (command) {
     case BRIGHTNESS_INCREASE:
-      _currentLevel = _currentLevel < numLevels() - 1 ? _currentLevel + 1 : _currentLevel;
+      _currentSetting = _currentSetting < numLevels() - 1 ? _currentSetting + 1 : _currentSetting;
       break;
       
     case BRIGHTNESS_DECREASE:
-      _currentLevel = _currentLevel > 0 ? _currentLevel - 1 : _currentLevel;
+      _currentSetting = _currentSetting > 0 ? _currentSetting - 1 : _currentSetting;
       break;
       
     default:
       OperatingMode::execute(command);
       return;
   }
+  
+  apply();
+}
 
-  Serial.print("Brightness = ");
+void BrightnessMode::leave() {
+  save();
+}
+
+void BrightnessMode::reset() {
+  _currentSetting = DEFAULT_SETTING;
+  save();
+  apply();
+}
+
+void BrightnessMode::save() {
+  EEPROM.write(EEPROM_ADDR_BRIGHTNESS, _currentSetting);
+}
+
+void BrightnessMode::load() {
+  _currentSetting = EEPROM.read(EEPROM_ADDR_BRIGHTNESS);
+  if (_currentSetting >= numLevels()) {
+    _currentSetting = numLevels() - 1;
+  }
+}
+
+void BrightnessMode::apply() {
+  Serial.print("Brightness: ");
   Serial.println(level());
   FastLED.setBrightness(level());
 }
 
-void BrightnessMode::leave() {
-  EEPROM.write(0, _currentLevel);
-}
-
-void StateController::initializeModes() {
+void StateController::initialize() {
+  Buttons.update();
+  if (Buttons.isButtonDown(BUTTON_A)) {
+    factoryReset();
+  }
+  
   for (int i = 0; i < MODE_COUNT; ++i) {
     _modes[i]->initialize();
   }
+
+  setOperatingMode(MODE_SLEEP);
+}
+
+bool StateController::areLedsOn() const {
+  return digitalRead(LED_SENSE_PIN) == LOW;
+}
+
+void StateController::turnLedsOn() {
+  Serial.println("Turning LEDs on.");
+  digitalWrite(LED_ENABLE_PIN, HIGH);
+  delay(1);
+  if (!areLedsOn()) {
+    Serial.println("Attempted to power up LEDs but no voltage detected.");
+    return;
+  }
+  pinMode(LED_CLOCK_PIN, OUTPUT);
+  pinMode(LED_DATA_PIN, OUTPUT);  
+}
+
+void StateController::turnLedsOff() {
+  Serial.println("Turning LEDs off.");
+  pinMode(LED_CLOCK_PIN, INPUT);
+  pinMode(LED_DATA_PIN, INPUT);
+  digitalWrite(LED_ENABLE_PIN, LOW);
+  delay(1);
+  if (areLedsOn()) {
+    Serial.println("Failed to power down LEDs.");
+    FastLED.showColor(CRGB::Black);
+    return;
+  }
+}
+
+void StateController::factoryReset() {
+  Serial.println("Factory reset!");
+  turnLedsOn();
+  brightnessMode.reset();
+  FastLED.showColor(CRGB::White);
+  FastLED.delay(400);
+  FastLED.showColor(CRGB::Black);
+  turnLedsOff();
 }
 
 void StateController::setOperatingModeWithCommand(Mode mode, Command command) {
@@ -118,19 +180,5 @@ void StateController::setOperatingModeWithCommand(Mode mode, Command command) {
     _modes[_currentMode]->execute(command);
   }
 }
-
-OffMode offMode;
-PerformMode performMode;
-BrightnessMode brightnessMode;
-ProgramEnterMode programEnterMode;
-ProgramMode programMode;
-
-OperatingMode* StateController::_modes[MODE_COUNT] = {
-  &offMode,
-  &performMode,
-  &brightnessMode,
-  &programEnterMode,
-  &programMode
-};
 
 StateController Akira;

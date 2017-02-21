@@ -1,5 +1,8 @@
 #include "DualButtonController.h"
+#include "Config.h"
 #include <Arduino.h>
+
+DualButtons::Controller Buttons(BUTTON_A_PIN, BUTTON_B_PIN);
 
 namespace DualButtons {
 
@@ -8,10 +11,12 @@ Controller::Controller(int pinA, int pinB) {
   _button2.attach(pinB, INPUT_PULLUP);
   _buttonA = &_button1;
   _buttonB = &_button2;
+  _buttonA->update();
+  _buttonB->update();
 }
 
 void Controller::update() {
-  bool gestureStarted = _buttonA->gestureStarted() || _buttonB->gestureStarted();
+  unsigned int ms = millis();
   
   clearEventsForButtonsABTogether();
   _buttonA->update();
@@ -19,36 +24,50 @@ void Controller::update() {
 
   bool anyButtonJustPressed = _buttonA->triggered(Momentary::PRESS) || _buttonB->triggered(Momentary::PRESS);
   bool bothButtonsJustPressed = _buttonA->triggered(Momentary::PRESS) && _buttonB->triggered(Momentary::PRESS);
+  bool anyButtonDown = _buttonA->isDown() || _buttonB->isDown();
+  bool bothButtonsDown = _buttonA->isDown() && _buttonB->isDown();
 
   if (bothButtonsJustPressed) {
     triggerEventForButtonsABTogether(PRESS);
+    _firstButtonPressed = ms;
+    _secondButtonPressed = ms;
   }
   else if (anyButtonJustPressed) {
-    
-  }
-  
-  /*
-  if (!hasActionStarted && _buttonA->justOccured(PRESS) || _buttonB->justOccured(PRESS)) {
-    _firstButtonPressed = millis();
-  }
-  else if (_buttonA->justOccured(RELEASE) || _buttonB->justOccured(RELEASE)) {
-    _firstButtonPressed = 0;
-  }
-
-  if (_firstButtonPressed > 0) {
-    if (millis() > _firstButtonPressed + _simultaneousThreshold) {
-      if (!_buttonA->didOccurInAction(PRESS)) {
-        _buttonA->setEvent(USER_EVENT);
-      }
-      else if (!_buttonB->didOccurInAction(PRESS)) {
-        _buttonB->setEvent(USER_EVENT);
+    if (bothButtonsDown) {
+      _secondButtonPressed = ms;
+      if (ms <= _firstButtonPressed + _simultaneousPressThreshold) {
+        triggerEventForButtonsABTogether(PRESS);
       }
     }
-    else if (_buttonA->isDown() && _buttonB->isDown())
-      setEventForBothButtons(PRESS);
+    else {
+      _firstButtonPressed = ms;
     }
   }
-  */
+  else if (bothButtonsDown) {
+    if (!gestureIncludes(BUTTONS_A_B_TOGETHER, HOLD) && gestureIncludes(BUTTONS_A_B_TOGETHER, PRESS) &&
+                                                        ms >= _secondButtonPressed + _simultaneousHoldTime) {
+      triggerEventForButtonsABTogether(HOLD);
+    }
+  }
+  else if (anyButtonDown) {
+    Momentary* downBtn = _buttonA->isDown() ? _buttonA : _buttonB;
+    Momentary* upBtn = _buttonA->isDown() ? _buttonB : _buttonA;
+    if (!downBtn->gestureIncludes(Momentary::USER_EVENT) && !upBtn->gestureIncludes(Momentary::USER_EVENT) && 
+        !gestureIncludes(BUTTONS_A_B_TOGETHER, PRESS) && ms > _firstButtonPressed + _simultaneousPressThreshold) {
+      downBtn->triggerUserEvent();
+    }
+  }
+  else if (_buttonA->triggered(Momentary::RELEASE) || _buttonB->triggered(Momentary::RELEASE)) {
+    if (gestureIncludes(BUTTONS_A_B_TOGETHER, PRESS)) {
+      triggerEventForButtonsABTogether(RELEASE);
+    }
+  }
+  else {
+    resetButtonsABTogether();
+    if (_swapButtonsOnRelease && !_buttonA->gestureStarted() && !_buttonB->gestureStarted()) {
+      swapButtons();
+    }
+  }
 }
 
 void Controller::reset() {
@@ -101,7 +120,25 @@ bool Controller::gestureIncludes(Button button, Event event) const {
 
 void Controller::triggerEventForButtonsABTogether(Event event) {
   _currentEventsForButtonsABTogether |= 1 << static_cast<int>(event);
-  _gestureEventsForButtonsABTogether |= 1 << static_cast<int>(event);  
+  _gestureEventsForButtonsABTogether |= 1 << static_cast<int>(event);
+#ifdef SERIAL_DEBUG
+  Serial.print("Dual Buttons: Triggering event: ");
+  switch (event) {
+    case PRESS: Serial.println("PRESS"); break;
+    case RELEASE: Serial.println("RELEASE"); break;
+    case HOLD: Serial.println("HOLD"); break;
+    default: break;
+  }
+#endif
+}
+
+bool Controller::isButtonDown(Button button) const {
+  switch (button) {
+    case BUTTON_A: return _buttonA->isDown();
+    case BUTTON_B: return _buttonB->isDown();
+    default: break;
+  }
+  return _buttonA->isDown() && _buttonB->isDown();
 }
 
 void Controller::performRequest(Request request) {

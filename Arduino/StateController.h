@@ -12,7 +12,7 @@ public:
   virtual const char* name() = 0;
 };
 
-class OffMode : public OperatingMode {
+class SleepMode : public OperatingMode {
 public:
   void enter(Command command);
   void leave();
@@ -21,7 +21,6 @@ public:
 private:
   void sleep();
   void wakeUp();
-  bool areLedsOn() const;
 };
 
 class PerformMode : public OperatingMode {
@@ -35,14 +34,19 @@ public:
   void execute(Command command);
   void leave();
   const char* name() { return "BRIGHTNESS"; }
+  void reset();
   
 private:
   static constexpr uint8_t _levels[] = { 7, 12, 20, 31, 45, 63, 90, 127, 181, 255 };
   static int numLevels() { return sizeof(_levels) / sizeof(_levels[0]); }
+  static constexpr int DEFAULT_SETTING = 5;
   
-  uint8_t level() const { return _levels[_currentLevel]; }
+  uint8_t level() const { return _levels[_currentSetting]; }
+  void save();
+  void load();
+  void apply();
   
-  int _currentLevel = 2; // serialise
+  int _currentSetting = DEFAULT_SETTING;
 };
 
 class ProgramEnterMode : public OperatingMode {
@@ -59,12 +63,17 @@ class StateController {
 public:
   static int transitionTableEntryCount() { return sizeof(stateTransitionTable) / sizeof(StateTransition); }
 
-  void initializeModes();
+  void initialize();
+  bool areLedsOn() const;
+  void turnLedsOn();
+  void turnLedsOff();
   void setOperatingMode(Mode mode) { setOperatingModeWithCommand(mode, DO_NOTHING); }
   void setOperatingModeWithCommand(Mode mode, Command command);
   Mode currentMode() const { return static_cast<Mode>(_currentMode); }
   
 private:
+  void factoryReset();
+  
   int _currentMode = -1;
   static OperatingMode* _modes[];
 };

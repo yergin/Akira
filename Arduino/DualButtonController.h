@@ -38,6 +38,7 @@ public:
   bool gestureIncludes(Button button, Event event) const;
   void performRequest(Request request);
   bool areButtonsSwapped() const { return _buttonsSwapped; }
+  bool isButtonDown(Button button) const;
   void update();
   void reset();
 
@@ -51,12 +52,16 @@ private:
   Momentary _button2;
   Momentary* _buttonA = 0;
   Momentary* _buttonB = 0;
-  int _simultaneousThreshold = 100;
+  int _simultaneousPressThreshold = 100;
+  int _simultaneousHoldTime = 300;
   bool _buttonsSwapped = false;
   bool _swapButtonsOnRelease = false;
   unsigned long _currentEventsForButtonsABTogether = 0;
   unsigned long _gestureEventsForButtonsABTogether = 0;
   unsigned long _firstButtonPressed = 0;
+  unsigned long _secondButtonPressed = 0;
 };
 
 }
+
+extern DualButtons::Controller Buttons;
