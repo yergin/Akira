@@ -1,6 +1,7 @@
 #pragma once
 
 #include "StateTransitionTable.h"
+#include "Animations.h"
 #include <cinttypes>
 
 class OperatingMode {
@@ -10,6 +11,10 @@ public:
   virtual void execute(Command command);
   virtual void leave() {}
   virtual const char* name() = 0;
+
+protected:
+  void shortBlink();
+  void longBlink();
 };
 
 class SleepMode : public OperatingMode {
@@ -31,6 +36,7 @@ public:
 class BrightnessMode : public OperatingMode {
 public:
   void initialize();
+  void enter(Command command);
   void execute(Command command);
   void leave();
   const char* name() { return "BRIGHTNESS"; }
@@ -51,11 +57,16 @@ private:
 
 class ProgramEnterMode : public OperatingMode {
 public:
+  void enter(Command command);
+  void execute(Command command);
   const char* name() { return "PROGRAM ENTER"; }
 };
 
 class ProgramMode : public OperatingMode {
 public:
+  void enter(Command command);
+  void execute(Command command);
+  void leave();
   const char* name() { return "PROGRAM"; }
 };
 
@@ -64,18 +75,42 @@ public:
   static int transitionTableEntryCount() { return sizeof(stateTransitionTable) / sizeof(StateTransition); }
 
   void initialize();
+  void update();
   bool areLedsOn() const;
   void turnLedsOn();
   void turnLedsOff();
   void setOperatingMode(Mode mode) { setOperatingModeWithCommand(mode, DO_NOTHING); }
   void setOperatingModeWithCommand(Mode mode, Command command);
   Mode currentMode() const { return static_cast<Mode>(_currentMode); }
+
+  void showFirstCue();
+  void showNextCue();
+  void showPreviousCue();
+  void enterProgramMode();
+  void deleteCurrentCue();
+  void insertCue();
+  void eraseAllCues();
+  void changeColor1();
+  void changeColor2();
+  void changeAnimation();
+  void exitProgramMode();
   
 private:
   void factoryReset();
-  
+  void storeDemoCues();
+  void setNextAnimation(AkiraAnimation* animation);
+  AkiraAnimation* createAnimation(int index);
+  Transition* transition() const;
+  void loadCuesFromEeprom();
+  void storeCuesInEeprom();
+
+  AkiraAnimation* _targetAnimation = 0;
+  AkiraAnimation* _sourceAnimation = 0;
+  int _currentCue = -1;
   int _currentMode = -1;
   static OperatingMode* _modes[];
+  AkiraAnimation::CueDescription _cues[MAX_CUES];
+  int _cueCount;
 };
 
 extern StateController Akira;

@@ -5,7 +5,6 @@
 #include "DualButtonController.h"
 #include "StateTransitionTable.h"
 #include "StateController.h"
-#include "DisplayController.h"
 
 void setup() {
   delay(400);
@@ -61,7 +60,7 @@ void delayForNextFrame() {
 void loop() {
   respondToButtons();
 
-  Display.update();
+  Akira.update();
   FastLED.show();
 
   delayForNextFrame();

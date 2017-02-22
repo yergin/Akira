@@ -34,29 +34,48 @@ AkiraAnimation* AkiraAnimation::create(AnimationPreset preset) {
   return animation;
 }
 
+AkiraAnimation* AkiraAnimation::create(const CueDescription& descr) {
+  AkiraAnimation* animation = AkiraAnimation::create(static_cast<AnimationPreset>(descr.animation));
+  animation->setColorPreset1(static_cast<ColorPreset>(descr.color1));
+  animation->setColorPreset2(static_cast<ColorPreset>(descr.color2));
+  return animation;
+}
+
+AkiraAnimation* AkiraAnimation::loadDemoCue(int index) {
+  return AkiraAnimation::create(_demo[index]);
+}
+
 AkiraAnimation* AkiraAnimation::loadFromEeprom(int *addr) {
   Cue cue;
   cue.data[0] = EEPROM.read(*addr);
   cue.data[1] = EEPROM.read(*addr + 1);
-  *addr += 2;
+  *addr += EEPROM_CUE_SIZE;
 
-  AkiraAnimation* animation = AkiraAnimation::create(static_cast<AnimationPreset>(cue.descr.animation));
-  animation->setColorPreset1(static_cast<ColorPreset>(cue.descr.color1));
-  animation->setColorPreset2(static_cast<ColorPreset>(cue.descr.color2));
-  return animation;  
-}
+  if (cue.descr.animation > PRESET_ANIM_COUNT) {
+    cue.descr.animation = PRESET_ANIM_GRADIENT;
+  }
 
-AkiraAnimation* AkiraAnimation::loadDemoCue(int index) {
-  AkiraAnimation* animation = AkiraAnimation::create(static_cast<AnimationPreset>(_demo[index].animation));
-  animation->setColorPreset1(static_cast<ColorPreset>(_demo[index].color1));
-  animation->setColorPreset2(static_cast<ColorPreset>(_demo[index].color2));
-  return animation;
+  if (cue.descr.color1 > PRESET_COL_COUNT) {
+    cue.descr.color1 = PRESET_COL_WHITE;
+  }
+
+  if (cue.descr.color1 > PRESET_COL_COUNT) {
+    cue.descr.color1 = PRESET_COL_BLACK;
+  }
+
+  return AkiraAnimation::create(cue.descr);
 }
 
 void AkiraAnimation::saveToEeprom(int *addr) {
   EEPROM.write(*addr, _cue.data[0]);
-  EEPROM.write(*addr, _cue.data[1]);
-  *addr += 2;
+  EEPROM.write(*addr + 1, _cue.data[1]);
+  *addr += EEPROM_CUE_SIZE;
+}
+
+void AkiraAnimation::copyToDescription(CueDescription* descr) {
+  descr->animation = _cue.descr.animation;
+  descr->color1 = _cue.descr.color1;
+  descr->color2 = _cue.descr.color2;
 }
 
 void AkiraAnimation::setColorPreset1(ColorPreset preset) {

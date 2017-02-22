@@ -40,15 +40,16 @@ public:
   struct CueDescription {
     ColorPreset color1: 4;
     ColorPreset color2: 4;
-    unsigned int animation : 4;    
+    unsigned int animation : 4;
   };
   
   union Cue {
     CueDescription descr;
-    uint8_t data[2];
+    uint8_t data[EEPROM_CUE_SIZE];
   };
   
   static AkiraAnimation* create(AnimationPreset preset);
+  static AkiraAnimation* create(const CueDescription& descr);
   static AkiraAnimation* loadFromEeprom(int* addr);
   static AkiraAnimation* loadDemoCue(int index);
   static int demoCueCount() { return sizeof(_demo) / sizeof(_demo[0]); }
@@ -57,6 +58,7 @@ public:
   virtual ~AkiraAnimation() {}
 
   void saveToEeprom(int* addr);
+  void copyToDescription(CueDescription* descr);
   
   virtual Transition* transition() const { return 0; }
 

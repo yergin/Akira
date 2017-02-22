@@ -52,7 +52,7 @@ private:
 
   Listener* _listener = 0;
   bool _inverted = true;
-  unsigned int _holdTime = 300;
+  unsigned int _holdTime = 400;
   unsigned int _doubleTapTime = 150;
   bool _reset = false;
   uint8_t _currentEvents = 0;
