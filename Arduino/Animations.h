@@ -8,9 +8,10 @@ enum AnimationPreset {
   PRESET_ANIM_OFF,
   PRESET_ANIM_GRADIENT,
   PRESET_ANIM_THROB,
+  PRESET_ANIM_WAVE,
+  PRESET_ANIM_STROBE,
   PRESET_ANIM_LONG_CHASE,
   PRESET_ANIM_SHORT_CHASE,
-  PRESET_ANIM_STROBE,
   PRESET_ANIM_COUNT
 };
 
@@ -132,6 +133,15 @@ protected:
   unsigned int loopLength() const { return 126; } 
 };
 
+class WaveAnimation : public AkiraAnimation
+{
+public:
+  Transition* transition() const { return &slowFade; }
+
+protected:
+  void draw(unsigned int frame);
+};
+
 class StrobeAnimation : public AkiraAnimation
 {
 protected:
@@ -144,16 +154,6 @@ protected:
   void colorPresetsChanged() { reset(); }
 };
 
-class ShortChaseAnimation : public AkiraAnimation
-{
-public:
-  Transition* transition() const { return &slowFade; }
-
-protected:
-  void draw(unsigned int frame);
-  unsigned int loopLength() const { return 40; }
-};
-
 class LongChaseAnimation : public AkiraAnimation
 {
 public:
@@ -162,5 +162,15 @@ public:
 protected:
   void draw(unsigned int frame);
   unsigned int loopLength() const { return 120; }
+};
+
+class ShortChaseAnimation : public AkiraAnimation
+{
+public:
+  Transition* transition() const { return &slowFade; }
+
+protected:
+  void draw(unsigned int frame);
+  unsigned int loopLength() const { return 40; }
 };
 
