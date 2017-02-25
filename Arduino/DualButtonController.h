@@ -36,17 +36,21 @@ public:
   bool triggered(Button button) const;
   bool triggered(Button button, Event event) const;
   bool gestureIncludes(Button button, Event event) const;
+  bool gestureStarted() const;
+  bool gestureStarted(Button button) const;
   void performRequest(Request request);
   bool areButtonsSwapped() const { return _buttonsSwapped; }
   bool isButtonDown(Button button) const;
   void update();
   void reset();
+  void sleep() { reset(); }
+  void wakeup(); 
 
 private:
   void swapButtons();
   void triggerEventForButtonsABTogether(Event event);
   void clearEventsForButtonsABTogether() { _currentEventsForButtonsABTogether = 0; }
-  void resetButtonsABTogether() { _gestureEventsForButtonsABTogether = 0; }
+  void resetButtonsABTogether();
   
   Momentary _button1;
   Momentary _button2;

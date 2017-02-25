@@ -27,7 +27,9 @@ public:
   Momentary() {}
 
   void update();
-  void reset() { _gestureEvents = 0; }
+  void reset();
+  void sleep() { reset(); }
+  void wakeup();
   
   bool isDown() { return read() != _inverted; }
   bool wasPressed() { return _inverted ? fell() : rose(); }

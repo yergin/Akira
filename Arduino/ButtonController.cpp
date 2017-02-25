@@ -8,7 +8,6 @@ void Momentary::update() {
     
   if (_reset) {
     reset();
-    _reset = false;
   }
   
   Bounce::update();
@@ -52,6 +51,17 @@ void Momentary::update() {
   }
 }
 
+void Momentary::reset()
+{
+  _currentEvents = 0;
+  _gestureEvents = 0;
+  _reset = false;
+}
+
+void Momentary::wakeup() {
+  previous_millis = millis();
+}
+
 void Momentary::triggerEvent(Event event) {
   _currentEvents |= 1 << static_cast<int>(event);
   _gestureEvents |= 1 << static_cast<int>(event);
@@ -67,6 +77,7 @@ void Momentary::triggerEvent(Event event) {
     case HOLD: Serial.print("HOLD\n"); break;
     case LONG_RELEASE: Serial.print("LONG_RELEASE\n"); break;
     case USER_EVENT: Serial.print("USER_EVENT\n"); break;
+    case EVENT_COUNT: break;
   }
 #endif
 

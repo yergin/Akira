@@ -4,12 +4,18 @@
 #include "Config.h"
 #include "Transitions.h"
 
-constexpr int COLOR_COUNT = 14;
-extern const CRGB COLOR[COLOR_COUNT];
+enum AnimationPreset {
+  PRESET_ANIM_OFF,
+  PRESET_ANIM_GRADIENT,
+  PRESET_ANIM_THROB,
+  PRESET_ANIM_LONG_CHASE,
+  PRESET_ANIM_SHORT_CHASE,
+  PRESET_ANIM_STROBE,
+  PRESET_ANIM_COUNT
+};
 
 enum ColorPreset {
-  PRESET_COL_BLACK = 0,
-  PRESET_COL_WHITE,
+  PRESET_COL_WHITE = 0,
   PRESET_COL_PINK,
   PRESET_COL_RED,
   PRESET_COL_ORANGE,
@@ -21,18 +27,24 @@ enum ColorPreset {
   PRESET_COL_BLUE,
   PRESET_COL_VIOLET,
   PRESET_COL_MAGENTA,
-  PRESET_COL_RAINBOW,
+  PRESET_COL_RAINBOW_OR_BLACK,
   PRESET_COL_COUNT
 };
 
-enum AnimationPreset {
-  PRESET_ANIM_GRADIENT,
-  PRESET_ANIM_THROB,
-  PRESET_ANIM_LONG_CHASE,
-  PRESET_ANIM_SHORT_CHASE,
-  PRESET_ANIM_STROBE,
-  PRESET_ANIM_COUNT
-};
+constexpr int COLOR[] = { 0x5f5f5f, // white
+                          0xff1f1f, // pink
+                          0xff0000, // red
+                          0xff2f00, // orange
+                          0xdf7700, // yellow
+                          0x8fcf00, // lime
+                          0x00ff00, // green
+                          0x00cf6f, // aqua
+                          0x173fbf, // light blue
+                          0x0000ff, // blue
+                          0x3f00ff, // violet
+                          0x8f008f, // magenta
+                          0x000000, // rainbow / black
+                        };
 
 class AkiraAnimation : public Animation
 {
@@ -84,12 +96,21 @@ private:
     { PRESET_COL_LIME, PRESET_COL_AQUA, PRESET_ANIM_GRADIENT },
     { PRESET_COL_MAGENTA, PRESET_COL_ORANGE, PRESET_ANIM_THROB },
     { PRESET_COL_ORANGE, PRESET_COL_BLUE, PRESET_ANIM_LONG_CHASE },
-    { PRESET_COL_PINK, PRESET_COL_BLACK, PRESET_ANIM_SHORT_CHASE },
-    { PRESET_COL_RAINBOW, PRESET_COL_BLACK, PRESET_ANIM_STROBE }
+    { PRESET_COL_PINK, PRESET_COL_RAINBOW_OR_BLACK, PRESET_ANIM_SHORT_CHASE },
+    { PRESET_COL_RAINBOW_OR_BLACK, PRESET_COL_RAINBOW_OR_BLACK, PRESET_ANIM_STROBE }
   };
 
   Cue _cue;
   unsigned int _frame = 0;
+};
+
+class OffAnimation : public AkiraAnimation
+{
+public:
+  Transition* transition() const { return &quickFade; }
+
+protected:
+  void draw(unsigned int frame);
 };
 
 class GradientAnimation : public AkiraAnimation
@@ -117,7 +138,7 @@ protected:
   void draw(unsigned int frame);
   
   unsigned int loopLength() const {
-    return (colorPreset1() == PRESET_COL_RAINBOW || colorPreset2() == PRESET_COL_BLACK) ? 3 : 6;
+    return (colorPreset1() == PRESET_COL_RAINBOW_OR_BLACK || colorPreset2() == PRESET_COL_RAINBOW_OR_BLACK) ? 3 : 6;
   }
 
   void colorPresetsChanged() { reset(); }

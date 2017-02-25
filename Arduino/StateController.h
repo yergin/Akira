@@ -9,6 +9,7 @@ public:
   virtual void initialize() {}
   virtual void enter(Command command) { execute(command); }
   virtual void execute(Command command);
+  virtual void update() {}
   virtual void leave() {}
   virtual const char* name() = 0;
 
@@ -20,6 +21,7 @@ protected:
 class SleepMode : public OperatingMode {
 public:
   void enter(Command command);
+  void update();
   void leave();
   const char* name() { return "OFF"; }
   
@@ -96,11 +98,13 @@ public:
   void exitProgramMode();
   
 private:
-  void factoryReset();
-  void storeDemoCues();
+  void respondToButtons();
+  void updateAnimations();
   void setNextAnimation(AkiraAnimation* animation);
   AkiraAnimation* createAnimation(int index);
   Transition* transition() const;
+  void factoryReset();
+  void storeDemoCues();
   void loadCuesFromEeprom();
   void storeCuesInEeprom();
 

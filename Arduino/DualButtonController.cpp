@@ -76,6 +76,20 @@ void Controller::reset() {
   resetButtonsABTogether();
 }
 
+void Controller::wakeup() {
+  _buttonA->wakeup();
+  _buttonB->wakeup();
+  if (_buttonA->isDown() || _buttonB->isDown()) {
+    _firstButtonPressed = millis();
+  }
+  _secondButtonPressed = 0;
+}
+
+void Controller::resetButtonsABTogether() {
+  _currentEventsForButtonsABTogether = 0;
+  _gestureEventsForButtonsABTogether = 0;
+}
+
 void Controller::swapButtons() {
   _swapButtonsOnRelease = false;
   _buttonsSwapped = !_buttonsSwapped;
@@ -116,6 +130,21 @@ bool Controller::gestureIncludes(Button button, Event event) const {
   }
 
   return _gestureEventsForButtonsABTogether & (1 << static_cast<int>(event));
+}
+
+bool Controller::gestureStarted() const {
+  return gestureStarted(BUTTON_A) || gestureStarted(BUTTON_B) || gestureStarted(BUTTONS_A_B_TOGETHER);
+}
+
+bool Controller::gestureStarted(Button button) const {
+  switch (button) {
+    case BUTTON_A: return _buttonA->gestureStarted();
+    case BUTTON_B: return _buttonB->gestureStarted();
+    default:
+      break;
+  }
+
+  return _gestureEventsForButtonsABTogether != 0;  
 }
 
 void Controller::triggerEventForButtonsABTogether(Event event) {

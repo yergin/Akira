@@ -1,27 +1,12 @@
 #include "Animations.h"
 #include <EEPROM.h>
 
-const CRGB COLOR[COLOR_COUNT] = {  0x000000, // black
-                                   0x5f5f5f, // white
-                                   0xff1f1f, // pink
-                                   0xff0000, // red
-                                   0xff2f00, // orange
-                                   0xdf7700, // yellow
-                                   0x8fcf00, // lime
-                                   0x00ff00, // green
-                                   0x00cf6f, // aqua
-                                   0x173fbf, // light blue
-                                   0x0000ff, // blue
-                                   0x3f00ff, // violet
-                                   0x8f008f, // magenta
-                                   0x000000, // rainbow
-                                };
-
 constexpr AkiraAnimation::CueDescription AkiraAnimation::_demo[];
 
 AkiraAnimation* AkiraAnimation::create(AnimationPreset preset) {
   AkiraAnimation* animation = 0;
   switch(preset) {
+    case PRESET_ANIM_OFF: animation = new GradientAnimation; break;
     case PRESET_ANIM_GRADIENT: animation = new GradientAnimation; break;
     case PRESET_ANIM_THROB: animation = new ThrobAnimation; break;
     case PRESET_ANIM_LONG_CHASE: animation = new LongChaseAnimation; break;
@@ -59,8 +44,8 @@ AkiraAnimation* AkiraAnimation::loadFromEeprom(int *addr) {
     cue.descr.color1 = PRESET_COL_WHITE;
   }
 
-  if (cue.descr.color1 > PRESET_COL_COUNT) {
-    cue.descr.color1 = PRESET_COL_BLACK;
+  if (cue.descr.color2 > PRESET_COL_COUNT) {
+    cue.descr.color2 = PRESET_COL_RAINBOW_OR_BLACK;
   }
 
   return AkiraAnimation::create(cue.descr);
@@ -98,7 +83,7 @@ void GradientAnimation::draw(unsigned int /*frame*/) {
     int alpha = i * 255 / (ledCount() - 1);
     CRGB pixel = 0;
     colorScaleSum(&pixel, color1(), 255 - alpha);
-    colorScaleSum(&pixel, (colorPreset2() == PRESET_COL_BLACK) ? color1() : color2(), alpha);
+    colorScaleSum(&pixel, (colorPreset2() == PRESET_COL_RAINBOW_OR_BLACK) ? color1() : color2(), alpha);
     writeLed(i, pixel);
   }
 }
@@ -113,10 +98,10 @@ void ThrobAnimation::draw(unsigned int frame) {
 }
 
 void StrobeAnimation::draw(unsigned int frame) {
-  if (colorPreset1() == PRESET_COL_RAINBOW) {
+  if (colorPreset1() == PRESET_COL_RAINBOW_OR_BLACK) {
     writeColor(frame == 0 ? CRGB::Red : (frame == 1 ? CRGB::Blue : CRGB::Green));
   }
-  else if (colorPreset2() == PRESET_COL_BLACK) {
+  else if (colorPreset2() == PRESET_COL_RAINBOW_OR_BLACK) {
     writeColor(frame == 0 ? color1() : CRGB::Black);
   }
   else {

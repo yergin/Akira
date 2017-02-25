@@ -2,6 +2,10 @@
 #include "Config.h"
 #include "DualButtonController.h"
 #include <EEPROM.h>
+#include <Snooze.h>
+
+SnoozeDigital Digital;
+SnoozeBlock SnoozeConfig(Digital);
 
 SleepMode sleepMode;
 PerformMode performMode;
@@ -47,22 +51,31 @@ void OperatingMode::longBlink() {
 }
 
 void SleepMode::enter(Command command) {
-  execute(command);
-  sleep();
+  Akira.turnLedsOff();
+  switch (command) {
+    case SLEEP_IMMEDIATE:
+      sleep();
+      break;
+
+    default:
+      execute(command);
+  }
 }
 
 void SleepMode::leave() {
-  wakeUp();
+  Akira.turnLedsOn();  
 }
 
 void SleepMode::sleep() {
-  Serial.println("Going to sleep...");
-  Akira.turnLedsOff();
+  Buttons.sleep();
+  Snooze.deepSleep(SnoozeConfig);
+  Buttons.wakeup();
 }
 
-void SleepMode::wakeUp() {
-  Serial.println("Waking up...");
-  Akira.turnLedsOn();
+void SleepMode::update() {
+  if (Buttons.triggered(BUTTONS_A_B_TOGETHER, RELEASE)) {
+    sleep();
+  }
 }
 
 constexpr uint8_t BrightnessMode::_levels[];
@@ -218,6 +231,9 @@ void StateController::storeDemoCues() {
 }
 
 void StateController::initialize() {
+  Digital.pinMode(BUTTON_A_PIN, INPUT_PULLUP, RISING);//pin, mode, type
+  Digital.pinMode(BUTTON_B_PIN, INPUT_PULLUP, RISING);//pin, mode, type
+
   Buttons.update();
   if (Buttons.isButtonDown(BUTTON_A)) {
     factoryReset();
@@ -229,7 +245,9 @@ void StateController::initialize() {
     _modes[i]->initialize();
   }
 
-  setOperatingMode(MODE_SLEEP);
+  delay(200);
+  
+  setOperatingModeWithCommand(MODE_SLEEP, SLEEP_IMMEDIATE);
 }
 
 bool StateController::areLedsOn() const {
@@ -258,6 +276,34 @@ void StateController::turnLedsOff() {
     Serial.println("Failed to power down LEDs.");
     FastLED.showColor(CRGB::Black);
     return;
+  }
+}
+
+void StateController::update() {
+  respondToButtons();
+  _modes[_currentMode]->update();
+  updateAnimations();
+  FastLED.show();
+}  
+
+void StateController::respondToButtons() {
+  using namespace DualButtons;
+  
+  Buttons.update();
+  if (!Buttons.triggered()) {
+    return;
+  }
+  Serial.println("Buttons TRIGGERED!!!");
+
+  for (int i = 0; i < StateController::transitionTableEntryCount(); ++i) {
+    const StateTransition* transition = &stateTransitionTable[i];
+    if (transition->currentMode != currentMode() || !Buttons.triggered(transition->button, transition->buttonEvent)) {
+      continue;
+    }
+
+    setOperatingModeWithCommand(transition->nextMode, transition->command);
+    Buttons.performRequest(transition->buttonRequest);
+    break;
   }
 }
 
@@ -314,7 +360,7 @@ void StateController::deleteCurrentCue() {
   }
   else {
     _cues[0].color1 = PRESET_COL_WHITE;
-    _cues[0].color2 = PRESET_COL_BLACK;
+    _cues[0].color2 = PRESET_COL_RAINBOW_OR_BLACK;
     _cues[0].animation = PRESET_ANIM_GRADIENT;
   }
   
@@ -349,7 +395,7 @@ void StateController::eraseAllCues() {
   _currentCue = 0;
   _cueCount = 1;
   _cues[0].color1 = PRESET_COL_WHITE;
-  _cues[0].color2 = PRESET_COL_BLACK;
+  _cues[0].color2 = PRESET_COL_RAINBOW_OR_BLACK;
   _cues[0].animation = PRESET_ANIM_GRADIENT;
   
   setNextAnimation(createAnimation(_currentCue));
@@ -365,10 +411,14 @@ void StateController::changeColor1() {
 }
 
 void StateController::changeColor2() {
+  if (_cues[_currentCue].color1 == PRESET_COL_RAINBOW_OR_BLACK) {
+    return;
+  }
+  
   Serial.println("Changing color #2.");
-  _cues[_currentCue].color2 = static_cast<ColorPreset>((_cues[_currentCue].color2 + 1) % PRESET_COL_RAINBOW);
+  _cues[_currentCue].color2 = static_cast<ColorPreset>((_cues[_currentCue].color2 + 1) % PRESET_COL_COUNT);
   if (_cues[_currentCue].color2 == _cues[_currentCue].color1) {
-    _cues[_currentCue].color2 = static_cast<ColorPreset>((_cues[_currentCue].color2 + 1) % PRESET_COL_RAINBOW);
+    _cues[_currentCue].color2 = static_cast<ColorPreset>((_cues[_currentCue].color2 + 1) % PRESET_COL_COUNT);
   }
   
   if (_targetAnimation) {
@@ -437,7 +487,7 @@ void StateController::setNextAnimation(AkiraAnimation* animation) {
   }
 }
 
-void StateController::update() {
+void StateController::updateAnimations() {
   if (!_targetAnimation) {
     return;
   }
