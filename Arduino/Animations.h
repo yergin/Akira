@@ -9,9 +9,12 @@ enum AnimationPreset {
   PRESET_ANIM_GRADIENT,
   PRESET_ANIM_THROB,
   PRESET_ANIM_WAVE,
-  PRESET_ANIM_STROBE,
-  PRESET_ANIM_LONG_CHASE,
   PRESET_ANIM_SHORT_CHASE,
+  PRESET_ANIM_LONG_CHASE,
+  PRESET_ANIM_STROBE,
+  PRESET_ANIM_SPARKLE,
+  PRESET_ANIM_FLICKER,
+  PRESET_ANIM_SPLIT,
   PRESET_ANIM_COUNT
 };
 
@@ -24,9 +27,9 @@ enum ColorPreset {
   PRESET_COL_LIME,
   PRESET_COL_GREEN,
   PRESET_COL_AQUA,
-  PRESET_COL_LIGHT_BLUE,
   PRESET_COL_BLUE,
   PRESET_COL_VIOLET,
+  PRESET_COL_FUCHSIA,
   PRESET_COL_MAGENTA,
   PRESET_COL_RAINBOW_OR_BLACK,
   PRESET_COL_COUNT
@@ -40,10 +43,10 @@ constexpr int COLOR[] = { 0x5f5f5f, // white
                           0x8fcf00, // lime
                           0x00ff00, // green
                           0x00cf6f, // aqua
-                          0x173fbf, // light blue
                           0x0000ff, // blue
                           0x3f00ff, // violet
-                          0x8f008f, // magenta
+                          0x8f008f, // fuchsia
+                          0xcf005f, // magenta
                           0x000000, // rainbow / black
                         };
 
@@ -130,7 +133,8 @@ public:
 
 protected:
   void draw(unsigned int frame);
-  unsigned int loopLength() const { return 126; } 
+  unsigned int loopLength() const { return colorPreset1() == PRESET_COL_RAINBOW_OR_BLACK ? 62 * 10 : 126; } 
+  void colorPresetsChanged() { reset(); }
 };
 
 class WaveAnimation : public AkiraAnimation
@@ -140,6 +144,27 @@ public:
 
 protected:
   void draw(unsigned int frame);
+};
+
+class ShortChaseAnimation : public AkiraAnimation
+{
+public:
+  Transition* transition() const { return &slowFade; }
+
+protected:
+  void draw(unsigned int frame);
+  unsigned int loopLength() const { return colorPreset1() == PRESET_COL_RAINBOW_OR_BLACK ? 200 : 40; }
+  void colorPresetsChanged() { reset(); }
+};
+
+class LongChaseAnimation : public AkiraAnimation
+{
+public:
+  Transition* transition() const { return &quickSwipe; }
+  
+protected:
+  void draw(unsigned int frame);
+  unsigned int loopLength() const { return 120; }
 };
 
 class StrobeAnimation : public AkiraAnimation
@@ -154,23 +179,40 @@ protected:
   void colorPresetsChanged() { reset(); }
 };
 
-class LongChaseAnimation : public AkiraAnimation
+class SparkleAnimation : public AkiraAnimation
 {
-public:
-  Transition* transition() const { return &quickSwipe; }
-  
 protected:
+  static constexpr int SPARK_COUNT = 1000;
+  static constexpr int SPARK_INTERVAL = 1;
+  
+  struct Spark {
+    int pos = 0;
+    int brightness = -1;
+  };
+
   void draw(unsigned int frame);
-  unsigned int loopLength() const { return 120; }
+  Spark* nextSpark();
+
+  Spark _sparks[SPARK_COUNT];
+  int _sparkCountdown = 0;
 };
 
-class ShortChaseAnimation : public AkiraAnimation
+class FlickerAnimation : public AkiraAnimation
 {
 public:
   Transition* transition() const { return &slowFade; }
 
 protected:
   void draw(unsigned int frame);
-  unsigned int loopLength() const { return 40; }
 };
+
+class SplitAnimation : public AkiraAnimation
+{
+public:
+  Transition* transition() const { return &quickFade; }
+
+protected:
+  void draw(unsigned int frame);
+};
+
 
