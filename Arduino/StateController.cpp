@@ -95,6 +95,14 @@ void BrightnessMode::execute(Command command) {
     case BRIGHTNESS_DECREASE:
       _currentSetting = _currentSetting > 0 ? _currentSetting - 1 : _currentSetting;
       break;
+
+    case BRIGHTNESS_MAXIMUM:
+      _currentSetting = numLevels() - 1;
+      break;
+      
+    case BRIGHTNESS_MINIMUM:
+      _currentSetting = 0;
+      break;
       
     default:
       OperatingMode::execute(command);
