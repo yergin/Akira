@@ -184,10 +184,12 @@ class SparkleAnimation : public AkiraAnimation
 protected:
   static constexpr int SPARK_COUNT = 1000;
   static constexpr int SPARK_INTERVAL = 1;
+  static constexpr int SPARK_MULTIPLIER = 4;
   
   struct Spark {
     int pos = 0;
     int brightness = -1;
+    CRGB color;
   };
 
   void draw(unsigned int frame);
