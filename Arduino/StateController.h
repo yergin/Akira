@@ -2,6 +2,7 @@
 
 #include "StateTransitionTable.h"
 #include "Animations.h"
+#include "PowerModule.h"
 #include <cinttypes>
 
 class OperatingMode {
@@ -35,6 +36,18 @@ public:
   const char* name() { return "PERFORM"; }
 };
 
+class ProgramEnterMode : public OperatingMode {
+public:
+  void enter(Command command);
+  void execute(Command command);
+  void leave();
+  const char* name() { return "PROGRAM ENTER"; }
+
+private:
+  BatteryState _batteryState = BATTERY_OK;
+  int _batteryLevel = 0;
+};
+
 class BrightnessMode : public OperatingMode {
 public:
   void initialize();
@@ -57,13 +70,6 @@ private:
   int _currentSetting = DEFAULT_SETTING;
 };
 
-class ProgramEnterMode : public OperatingMode {
-public:
-  void enter(Command command);
-  void execute(Command command);
-  const char* name() { return "PROGRAM ENTER"; }
-};
-
 class ProgramMode : public OperatingMode {
 public:
   void enter(Command command);
@@ -78,9 +84,6 @@ public:
 
   void initialize();
   void update();
-  bool areLedsOn() const;
-  void turnLedsOn();
-  void turnLedsOff();
   void setOperatingMode(Mode mode) { setOperatingModeWithCommand(mode, DO_NOTHING); }
   void setOperatingModeWithCommand(Mode mode, Command command);
   Mode currentMode() const { return static_cast<Mode>(_currentMode); }
@@ -96,13 +99,16 @@ public:
   void changeColor2();
   void changeAnimation();
   void exitProgramMode();
+  void showBattery() { setNextAnimation(new BatteryAnimation); }
+  void hideBattery() { setNextAnimation(createAnimation(_currentCue)); }
   
 private:
   void respondToButtons();
   void updateAnimations();
   void setNextAnimation(AkiraAnimation* animation);
   AkiraAnimation* createAnimation(int index);
-  Transition* transition() const;
+  Transition* transition() const { return _targetAnimation && _sourceAnimation ? _targetAnimation->transition() : 0; }
+  bool allowFollowingTransition() const { return _sourceAnimation && _sourceAnimation->allowFollowingTransition(); }
   void factoryReset();
   void storeDemoCues();
   void loadCuesFromEeprom();

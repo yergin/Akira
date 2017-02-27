@@ -24,7 +24,7 @@ protected:
   void writeColor(CRGB color);
 
 private:
-  int _ledCount;
+  unsigned int _ledCount;
   CRGB* _ledBuffer;
   char* _mask = 0;
   MaskOperation _maskOp = OVERLAY;

@@ -5,7 +5,11 @@
 
 void Momentary::update() {
   unsigned long elasped = millis() - previous_millis;
-    
+
+  if (!gestureStarted()) {
+    _suppressEvents = 0;
+  }
+  
   if (_reset) {
     reset();
   }
@@ -55,6 +59,7 @@ void Momentary::reset()
 {
   _currentEvents = 0;
   _gestureEvents = 0;
+  _suppressEvents = 0;
   _reset = false;
 }
 
@@ -63,11 +68,13 @@ void Momentary::wakeup() {
 }
 
 void Momentary::triggerEvent(Event event) {
-  _currentEvents |= 1 << static_cast<int>(event);
-  _gestureEvents |= 1 << static_cast<int>(event);
-  
 #ifdef SERIAL_DEBUG
-  Serial.print("Momentary: Triggering event: ");
+  if (_suppressEvents & (1 << static_cast<int>(event))) { 
+    Serial.print("Momentary: Suppressed event: ");
+  }
+  else {
+    Serial.print("Momentary: Triggering event: ");    
+  }
   switch (event) {
     case PRESS: Serial.print("PRESS\n"); break;
     case RELEASE: Serial.print("RELEASE\n"); break;
@@ -80,8 +87,15 @@ void Momentary::triggerEvent(Event event) {
     case EVENT_COUNT: break;
   }
 #endif
-
+  if (_suppressEvents & (1 << static_cast<int>(event))) { 
+    return;
+  }
+  
+  _currentEvents |= 1 << static_cast<int>(event);
+  _gestureEvents |= 1 << static_cast<int>(event);
+  
   if (_listener) {
     _listener->buttonEvent(this, event);
   }
 }
+

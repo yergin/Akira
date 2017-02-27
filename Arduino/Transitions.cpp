@@ -13,7 +13,13 @@ void QuickSwipe::update() {
   }
 }
 
+void Blinds::update() {
+  for (unsigned int i = 0; i < _ledCount; ++i) {
+    _mask[i] = (i % 20) <= (currentFrame() >> 1) ? 255 : 0;
+  }
+}
+
 QuickFade quickFade;
 SlowFade slowFade;
 QuickSwipe quickSwipe;
-
+Blinds blinds;

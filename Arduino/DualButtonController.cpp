@@ -46,6 +46,10 @@ void Controller::update() {
   else if (bothButtonsDown) {
     if (!gestureIncludes(BUTTONS_A_B_TOGETHER, HOLD) && gestureIncludes(BUTTONS_A_B_TOGETHER, PRESS) &&
                                                         ms >= _secondButtonPressed + _simultaneousHoldTime) {
+      _buttonA->suppressInGesture((Momentary::Event)HOLD);
+      _buttonB->suppressInGesture((Momentary::Event)HOLD);
+      _buttonA->suppressInGesture((Momentary::Event)SINGLE_TAP);
+      _buttonB->suppressInGesture((Momentary::Event)SINGLE_TAP);
       triggerEventForButtonsABTogether(HOLD);
     }
   }

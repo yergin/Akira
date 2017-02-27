@@ -1,4 +1,5 @@
 #include "Animations.h"
+#include "PowerModule.h"
 #include <EEPROM.h>
 
 constexpr AkiraAnimation::CueDescription AkiraAnimation::_demo[];
@@ -23,7 +24,7 @@ CRGB colorFromHue(unsigned int hue) {
 AkiraAnimation* AkiraAnimation::create(AnimationPreset preset) {
   AkiraAnimation* animation = 0;
   switch(preset) {
-    case PRESET_ANIM_OFF: animation = new GradientAnimation; break;
+    case PRESET_ANIM_OFF: animation = new OffAnimation; break;
     case PRESET_ANIM_GRADIENT: animation = new GradientAnimation; break;
     case PRESET_ANIM_THROB: animation = new ThrobAnimation; break;
     case PRESET_ANIM_WAVE: animation = new WaveAnimation; break;
@@ -32,7 +33,9 @@ AkiraAnimation* AkiraAnimation::create(AnimationPreset preset) {
     case PRESET_ANIM_STROBE: animation = new StrobeAnimation; break;
     case PRESET_ANIM_SPARKLE: animation = new SparkleAnimation; break;
     case PRESET_ANIM_FLICKER: animation = new FlickerAnimation; break;
+#ifdef EXPERIMENTAL_ANIMATIONS
     case PRESET_ANIM_SPLIT: animation = new SplitAnimation; break;
+#endif
     default: animation = new GradientAnimation; break;
   }
 
@@ -99,7 +102,27 @@ void AkiraAnimation::draw() {
   _frame = loopLength() ? (_frame + 1) % loopLength() : _frame + 1;
 }
 
+void OffAnimation::draw(unsigned int /*frame*/) {
+  writeColor(CRGB::Black);
+  if (!_slept) {
+    _slept = true;
+    //Power.deepSleep();
+  }
+}
+
+void OffAnimation::reset() {
+  AkiraAnimation::reset();
+  _slept = false;
+}
+
 void GradientAnimation::draw(unsigned int /*frame*/) {
+  if (colorPreset1() == PRESET_COL_RAINBOW_OR_BLACK) {
+    for (int i = 0; i < ledCount(); ++i) {
+      writeLed(i, colorFromHue(i * MAX_HUE / ledCount()));
+    }
+    return;
+  }
+  
   CRGB col2 = (colorPreset2() == PRESET_COL_RAINBOW_OR_BLACK) ? color1() : color2();
   for (int i = 0; i < ledCount(); ++i) {
     int alpha = waveLookup[i * 255 / (ledCount() - 1)];
@@ -140,15 +163,40 @@ void WaveAnimation::draw(unsigned int frame) {
     return;
   }
   
-  CRGB col2 = (colorPreset2() == PRESET_COL_RAINBOW_OR_BLACK) ? color1() : color2();
   for (int i = 0; i < ledCount(); ++i) {
     unsigned int index = ((i << 4) - (frame << 3) + 0xFFFF0000) % 510;
     index = index < 256 ? index : 510 - index;
     int alpha = waveLookup[index];
     CRGB pixel = 0;
     colorScaleSum(&pixel, color1(), 255 - alpha);
-    colorScaleSum(&pixel, col2, alpha);
+    colorScaleSum(&pixel, color2(), alpha);
     writeLed(i, pixel);
+  }
+}
+
+void ShortChaseAnimation::draw(unsigned int frame) {
+  if (colorPreset1() == PRESET_COL_RAINBOW_OR_BLACK) {
+    for (int i = 0; i < ledCount(); ++i) {
+      writeLed(i, colorFromHue((((i - (frame >> 1) + 100) % 200) / 20) << 9));
+    }
+    return;
+  }
+  
+  for (int i = 0; i < ledCount(); ++i) {
+    writeLed(i, (i - (frame >> 1) + 20) % 20 < 10 ? color1() : color2());
+  }
+}
+
+void LongChaseAnimation::draw(unsigned int frame) {
+  if (colorPreset1() == PRESET_COL_RAINBOW_OR_BLACK) {
+    for (int i = 0; i < ledCount(); ++i) {
+      writeLed(i, colorFromHue((((i - frame + 600) % 300) / 60) << 9));
+    }
+    return;
+  }
+  
+  for (int i = 0; i < ledCount(); ++i) {
+    writeLed(i, (i - frame + 120) % 120 < 60 ? color1() : color2());
   }
 }
 
@@ -161,24 +209,6 @@ void StrobeAnimation::draw(unsigned int frame) {
   }
   else {
     writeColor(frame == 0 ? color1() : (frame == 3 ? color2() : CRGB::Black));        
-  }
-}
-
-void LongChaseAnimation::draw(unsigned int frame) {
-  for (int i = 0; i < ledCount(); ++i) {
-    writeLed(i, (i - frame + 120) % 120 < 60 ? color1() : color2());
-  }
-}
-
-void ShortChaseAnimation::draw(unsigned int frame) {
-  if (colorPreset1() == PRESET_COL_RAINBOW_OR_BLACK) {
-    for (int i = 0; i < ledCount(); ++i) {
-      writeLed(i, colorFromHue((((i - (frame >> 1) + 100) % 200) / 20) << 9));
-    }
-    return;
-  }
-  for (int i = 0; i < ledCount(); ++i) {
-    writeLed(i, (i - (frame >> 1) + 20) % 20 < 10 ? color1() : color2());
   }
 }
 
@@ -200,7 +230,7 @@ void SparkleAnimation::draw(unsigned int /*frame*/) {
         spark->pos = random(LED_COUNT);
         spark->brightness = 255;
         if (colorPreset1() == PRESET_COL_RAINBOW_OR_BLACK) {
-          spark->color = colorFromHue(random(MAX_HUE));//;COLOR[random(PRESET_COL_RED, PRESET_COL_RAINBOW_OR_BLACK)];
+          spark->color = colorFromHue(random(MAX_HUE));
         }
         else if (colorPreset2() == PRESET_COL_RAINBOW_OR_BLACK) {
           spark->color = color1();
@@ -230,8 +260,70 @@ void SparkleAnimation::draw(unsigned int /*frame*/) {
   _sparkCountdown--;
 }
 
-void FlickerAnimation::draw(unsigned int /*frame*/) {
-  
+void FlickerAnimation::reset() {
+  AkiraAnimation::reset();
+  _state = LIGHT_OFF;
+  _nextSwitch = 0;
 }
 
+void FlickerAnimation::draw(unsigned int frame) {
+  if (frame >= _nextSwitch) {
+    switch (_state) {
+      case LIGHT_OFF:
+        _state = random(ON_PROBABILITY + PULSE_PROBABILITY) < ON_PROBABILITY ? LIGHT_ON : LIGHT_PULSE;
+        break;
+        
+      case LIGHT_ON:
+        _color1 = colorPreset1() == PRESET_COL_RAINBOW_OR_BLACK ? colorFromHue(random(MAX_HUE)) : color1();
+        _state = random(OFF_PROBABILITY + PULSE_PROBABILITY) < OFF_PROBABILITY ? LIGHT_OFF : LIGHT_PULSE;
+        break;
+        
+      case LIGHT_PULSE:
+        _color1 = colorPreset1() == PRESET_COL_RAINBOW_OR_BLACK ? colorFromHue(random(MAX_HUE)) : color1();
+        _state = random(OFF_PROBABILITY + ON_PROBABILITY) < OFF_PROBABILITY ? LIGHT_OFF : LIGHT_ON;
+        break;
+    }
+
+    switch (_state) {
+      case LIGHT_OFF:
+        _nextSwitch = random(MIN_OFF_DURATION, MAX_OFF_DURATION + 1) + frame;
+        writeColor(color2());
+        break;
+        
+      case LIGHT_ON:
+        _nextSwitch = random(MIN_ON_DURATION, MAX_ON_DURATION + 1) + frame;
+        writeColor(_color1);
+        break;
+
+      case LIGHT_PULSE:
+        _nextSwitch = random(MIN_PULSE_DURATION, MAX_PULSE_DURATION + 1) + frame;
+        break;
+    }
+  }
+
+  if (_state == LIGHT_PULSE) {
+    writeColor(frame % (PULSE_ON_DURATION + PULSE_OFF_DURATION) < PULSE_ON_DURATION ? _color1 : color2());
+  }
+}
+
+BatteryAnimation::BatteryAnimation() {
+  _litLeds = (Power.milliVolts() - BATT_MILLIVOLT_CRITICAL) * (LED_UI_BATT_LOW_SPAN - LED_UI_BATT_OK_SPAN) / (BATT_MILLIVOLT_FULL - BATT_MILLIVOLT_CRITICAL) + LED_UI_BATT_CRITICAL_SPAN;
+  writeColor(CRGB::Black);
+}
+
+void BatteryAnimation::draw(unsigned int frame) {
+  unsigned int leds = _litLeds < (frame << 1) ? _litLeds : (frame << 1);
+  
+  for (unsigned int i = 0; i < LED_UI_BATT_CRITICAL_SPAN && i < leds; ++i) {
+    writeLed(LED_UI_BATT_START + i, COLOR[PRESET_COL_RED]);
+  }
+
+  for (unsigned int i = LED_UI_BATT_CRITICAL_SPAN; i < LED_UI_BATT_CRITICAL_SPAN + LED_UI_BATT_LOW_SPAN && i < leds; ++i) {
+    writeLed(LED_UI_BATT_START + i, COLOR[PRESET_COL_YELLOW]);
+  }
+
+  for (unsigned int i = LED_UI_BATT_CRITICAL_SPAN + LED_UI_BATT_LOW_SPAN; i < LED_UI_BATT_SPAN && i < leds; ++i) {
+    writeLed(LED_UI_BATT_START + i, COLOR[PRESET_COL_GREEN]);
+  }
+}
 

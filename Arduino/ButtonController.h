@@ -39,6 +39,7 @@ public:
   void triggerUserEvent() { triggerEvent(USER_EVENT); }
   bool gestureStarted() const { return _gestureEvents != 0; }
   bool gestureIncludes(Event event) const { return _gestureEvents & (1 << static_cast<int>(event)); }
+  void suppressInGesture(Event event) { _suppressEvents |= 1 << static_cast<int>(event); }
   
   void setHoldTime(unsigned int ms) { _holdTime = ms; }
   unsigned int holdTime() { return _holdTime; }
@@ -59,5 +60,6 @@ private:
   bool _reset = false;
   uint8_t _currentEvents = 0;
   uint8_t _gestureEvents = 0;
+  uint8_t _suppressEvents = 0;
 };
 

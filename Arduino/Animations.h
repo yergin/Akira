@@ -14,7 +14,9 @@ enum AnimationPreset {
   PRESET_ANIM_STROBE,
   PRESET_ANIM_SPARKLE,
   PRESET_ANIM_FLICKER,
+#ifdef EXPERIMENTAL_ANIMATIONS
   PRESET_ANIM_SPLIT,
+#endif
   PRESET_ANIM_COUNT
 };
 
@@ -77,6 +79,7 @@ public:
   void copyToDescription(CueDescription* descr);
   
   virtual Transition* transition() const { return 0; }
+  virtual bool allowFollowingTransition() const { return true; }
 
   virtual void setColorPreset1(ColorPreset preset);
   virtual void setColorPreset2(ColorPreset preset);
@@ -84,7 +87,7 @@ public:
   ColorPreset colorPreset1() const { return _cue.descr.color1; }
   ColorPreset colorPreset2() const { return _cue.descr.color2; }
   CRGB color1() const { return COLOR[colorPreset1()]; }
-  CRGB color2() const { return COLOR[colorPreset2()]; }
+  CRGB color2() const { return colorPreset1() == PRESET_COL_RAINBOW_OR_BLACK ? COLOR[PRESET_COL_RAINBOW_OR_BLACK] : COLOR[colorPreset2()]; }
 
   void draw();
 
@@ -111,10 +114,14 @@ private:
 class OffAnimation : public AkiraAnimation
 {
 public:
-  Transition* transition() const { return &quickFade; }
+  bool allowFollowingTransition() const { return false; }
+  void reset();
 
 protected:
   void draw(unsigned int frame);
+
+private:
+  bool _slept = false;
 };
 
 class GradientAnimation : public AkiraAnimation
@@ -149,7 +156,7 @@ protected:
 class ShortChaseAnimation : public AkiraAnimation
 {
 public:
-  Transition* transition() const { return &slowFade; }
+  Transition* transition() const { return &blinds; }
 
 protected:
   void draw(unsigned int frame);
@@ -164,7 +171,8 @@ public:
   
 protected:
   void draw(unsigned int frame);
-  unsigned int loopLength() const { return 120; }
+  unsigned int loopLength() const { return colorPreset1() == PRESET_COL_RAINBOW_OR_BLACK ? 600 : 120; }
+  void colorPresetsChanged() { reset(); }
 };
 
 class StrobeAnimation : public AkiraAnimation
@@ -177,6 +185,7 @@ protected:
   }
 
   void colorPresetsChanged() { reset(); }
+  bool allowFollowingTransition() const { return false; }
 };
 
 class SparkleAnimation : public AkiraAnimation
@@ -202,10 +211,35 @@ protected:
 class FlickerAnimation : public AkiraAnimation
 {
 public:
-  Transition* transition() const { return &slowFade; }
+  bool allowFollowingTransition() const { return false; }
 
+  void reset();
+  
 protected:
   void draw(unsigned int frame);
+
+private:
+  enum State {
+    LIGHT_OFF = 0,
+    LIGHT_ON,
+    LIGHT_PULSE
+  };
+
+  static constexpr unsigned int MIN_OFF_DURATION = 6;
+  static constexpr unsigned int MAX_OFF_DURATION = 48;
+  static constexpr unsigned int MIN_ON_DURATION = 2;
+  static constexpr unsigned int MAX_ON_DURATION = 20;
+  static constexpr unsigned int MIN_PULSE_DURATION = 12;
+  static constexpr unsigned int MAX_PULSE_DURATION = 20;
+  static constexpr unsigned int PULSE_ON_DURATION = 2;
+  static constexpr unsigned int PULSE_OFF_DURATION = 6;
+  static constexpr unsigned int OFF_PROBABILITY = 10;
+  static constexpr unsigned int ON_PROBABILITY = 4;
+  static constexpr unsigned int PULSE_PROBABILITY = 2;
+  
+  State _state = LIGHT_OFF;
+  unsigned int _nextSwitch = 0;
+  CRGB _color1 = CRGB::Black;
 };
 
 class SplitAnimation : public AkiraAnimation
@@ -215,6 +249,20 @@ public:
 
 protected:
   void draw(unsigned int frame);
+};
+
+class BatteryAnimation : public AkiraAnimation
+{
+public:
+  BatteryAnimation();
+
+  bool allowFollowingTransition() const { return false; }
+
+protected:
+  void draw(unsigned int frame);
+
+private:
+  unsigned int _litLeds = 0;
 };
 
 

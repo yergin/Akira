@@ -2,10 +2,6 @@
 #include "Config.h"
 #include "DualButtonController.h"
 #include <EEPROM.h>
-#include <Snooze.h>
-
-SnoozeDigital Digital;
-SnoozeBlock SnoozeConfig(Digital);
 
 SleepMode sleepMode;
 PerformMode performMode;
@@ -51,7 +47,7 @@ void OperatingMode::longBlink() {
 }
 
 void SleepMode::enter(Command command) {
-  Akira.turnLedsOff();
+  Power.turnLedsOff();
   switch (command) {
     case SLEEP_IMMEDIATE:
       sleep();
@@ -63,19 +59,42 @@ void SleepMode::enter(Command command) {
 }
 
 void SleepMode::leave() {
-  Akira.turnLedsOn();  
+  Power.turnLedsOn();  
 }
 
 void SleepMode::sleep() {
-  Buttons.sleep();
-  Snooze.deepSleep(SnoozeConfig);
-  Buttons.wakeup();
+  Power.deepSleep();
 }
 
 void SleepMode::update() {
   if (Buttons.triggered(BUTTONS_A_B_TOGETHER, RELEASE)) {
     sleep();
   }
+}
+
+void ProgramEnterMode::enter(Command command) {
+  shortBlink();
+  execute(command);
+  Akira.showBattery();
+}
+
+void ProgramEnterMode::execute(Command command) {
+  switch (command) {
+    case PROGRAM_FIRST_CUE:
+      Akira.showFirstCue();
+      break;
+
+    case PROGRAM_ERASE_ALL_CUES:
+      Akira.eraseAllCues();
+      break;
+
+    default:
+      OperatingMode::execute(command);
+  }
+}
+
+void ProgramEnterMode::leave() {
+  Akira.hideBattery();
 }
 
 constexpr uint8_t BrightnessMode::_levels[];
@@ -140,29 +159,11 @@ void BrightnessMode::load() {
 }
 
 void BrightnessMode::apply() {
+#ifdef SERIAL_DEBUG
   Serial.print("Brightness: ");
   Serial.println(level());
+#endif
   FastLED.setBrightness(level());
-}
-
-void ProgramEnterMode::enter(Command command) {
-  shortBlink();
-  execute(command);
-}
-
-void ProgramEnterMode::execute(Command command) {
-  switch (command) {
-    case PROGRAM_FIRST_CUE:
-      Akira.showFirstCue();
-      break;
-
-    case PROGRAM_ERASE_ALL_CUES:
-      Akira.eraseAllCues();
-      break;
-
-    default:
-      OperatingMode::execute(command);
-  }
 }
 
 void ProgramMode::enter(Command command) {
@@ -216,8 +217,10 @@ void ProgramMode::leave() {
 }
 
 void StateController::factoryReset() {
+#ifdef SERIAL_DEBUG
   Serial.println("Factory reset!");
-  turnLedsOn();
+#endif
+  Power.turnLedsOn();
   brightnessMode.reset();
   FastLED.showColor(CRGB::White);
 
@@ -225,7 +228,7 @@ void StateController::factoryReset() {
   
   FastLED.delay(400);
   FastLED.showColor(CRGB::Black);
-  turnLedsOff();
+  Power.turnLedsOff();
 }
 
 void StateController::storeDemoCues() {
@@ -239,9 +242,7 @@ void StateController::storeDemoCues() {
 }
 
 void StateController::initialize() {
-  Digital.pinMode(BUTTON_A_PIN, INPUT_PULLUP, RISING);//pin, mode, type
-  Digital.pinMode(BUTTON_B_PIN, INPUT_PULLUP, RISING);//pin, mode, type
-
+  Power.initialize();
   Buttons.update();
   if (Buttons.isButtonDown(BUTTON_A)) {
     factoryReset();
@@ -258,36 +259,8 @@ void StateController::initialize() {
   setOperatingModeWithCommand(MODE_SLEEP, SLEEP_IMMEDIATE);
 }
 
-bool StateController::areLedsOn() const {
-  return digitalRead(LED_SENSE_PIN) == LOW;
-}
-
-void StateController::turnLedsOn() {
-  Serial.println("Turning LEDs on.");
-  digitalWrite(LED_ENABLE_PIN, HIGH);
-  delay(1);
-  if (!areLedsOn()) {
-    Serial.println("Attempted to power up LEDs but no voltage detected.");
-    return;
-  }
-  pinMode(LED_CLOCK_PIN, OUTPUT);
-  pinMode(LED_DATA_PIN, OUTPUT);  
-}
-
-void StateController::turnLedsOff() {
-  Serial.println("Turning LEDs off.");
-  pinMode(LED_CLOCK_PIN, INPUT);
-  pinMode(LED_DATA_PIN, INPUT);
-  digitalWrite(LED_ENABLE_PIN, LOW);
-  delay(1);
-  if (areLedsOn()) {
-    Serial.println("Failed to power down LEDs.");
-    FastLED.showColor(CRGB::Black);
-    return;
-  }
-}
-
 void StateController::update() {
+  Power.update();
   respondToButtons();
   _modes[_currentMode]->update();
   updateAnimations();
@@ -301,7 +274,6 @@ void StateController::respondToButtons() {
   if (!Buttons.triggered()) {
     return;
   }
-  Serial.println("Buttons TRIGGERED!!!");
 
   for (int i = 0; i < StateController::transitionTableEntryCount(); ++i) {
     const StateTransition* transition = &stateTransitionTable[i];
@@ -319,14 +291,18 @@ void StateController::setOperatingModeWithCommand(Mode mode, Command command) {
   if (mode != _currentMode) {
     if (_currentMode >= 0) {
       _modes[_currentMode]->leave();
+#ifdef SERIAL_DEBUG
       Serial.print("Leaving ");
       Serial.print(_modes[_currentMode]->name());
       Serial.println(" mode.");
+#endif
     }
     _currentMode = mode;
+#ifdef SERIAL_DEBUG
     Serial.print("Entering ");
     Serial.print(_modes[_currentMode]->name());
     Serial.println(" mode.");
+#endif
     _modes[_currentMode]->enter(command);
   }
   else if (_currentMode >= 0 || command != DO_NOTHING)
@@ -355,10 +331,11 @@ void StateController::enterProgramMode() {
 }
 
 void StateController::deleteCurrentCue() {
+#ifdef SERIAL_DEBUG
   Serial.print("Deleting cue #");
   Serial.print(_currentCue + 1);
   Serial.println(".");
-  
+#endif
   for (int i = _currentCue; i < _cueCount - 1; ++i) {
     _cues[i] = _cues[i+1];
   }
@@ -381,13 +358,17 @@ void StateController::deleteCurrentCue() {
 
 void StateController::insertCue() {
   if (_cueCount >= MAX_CUES) {
+#ifdef SERIAL_DEBUG
     Serial.print("Maximum cue limit reached.");
+#endif
     return;
   }
   
+#ifdef SERIAL_DEBUG
   Serial.print("Inserting cue at position #");
   Serial.print(_currentCue + 1);
   Serial.println(".");
+#endif
 
   for (int i = _cueCount; i > _currentCue; --i) {
     _cues[i] = _cues[i-1];
@@ -398,8 +379,9 @@ void StateController::insertCue() {
 }
 
 void StateController::eraseAllCues() {
+#ifdef SERIAL_DEBUG
   Serial.print("Erasing all cues.");
-
+#endif
   _currentCue = 0;
   _cueCount = 1;
   _cues[0].color1 = PRESET_COL_WHITE;
@@ -410,7 +392,9 @@ void StateController::eraseAllCues() {
 }
 
 void StateController::changeColor1() {
+#ifdef SERIAL_DEBUG
   Serial.println("Changing color #1.");
+#endif
   _cues[_currentCue].color1 = static_cast<ColorPreset>((_cues[_currentCue].color1 + 1) % PRESET_COL_COUNT);
   
   if (_targetAnimation) {
@@ -423,7 +407,9 @@ void StateController::changeColor2() {
     return;
   }
   
+#ifdef SERIAL_DEBUG
   Serial.println("Changing color #2.");
+#endif
   _cues[_currentCue].color2 = static_cast<ColorPreset>((_cues[_currentCue].color2 + 1) % PRESET_COL_COUNT);
   if (_cues[_currentCue].color2 == _cues[_currentCue].color1) {
     _cues[_currentCue].color2 = static_cast<ColorPreset>((_cues[_currentCue].color2 + 1) % PRESET_COL_COUNT);
@@ -435,7 +421,9 @@ void StateController::changeColor2() {
 }
 
 void StateController::changeAnimation() {
+#ifdef SERIAL_DEBUG
   Serial.println("Changing animation.");
+#endif
   _cues[_currentCue].animation = static_cast<AnimationPreset>((_cues[_currentCue].animation + 1) % PRESET_ANIM_COUNT);
   setNextAnimation(createAnimation(_currentCue));  
 }
@@ -445,7 +433,9 @@ void StateController::exitProgramMode() {
 }
 
 void StateController::loadCuesFromEeprom() {
+#ifdef SERIAL_DEBUG
   Serial.println("Loading cues.");
+#endif
   _cueCount = EEPROM.read(EEPROM_ADDR_CUE_COUNT);
   int addr = EEPROM_ADDR_FIRST_CUE;
   for (int i = 0; i < _cueCount; ++i) {
@@ -456,7 +446,9 @@ void StateController::loadCuesFromEeprom() {
 }
 
 void StateController::storeCuesInEeprom() {
+#ifdef SERIAL_DEBUG
   Serial.println("Storing cues.");
+#endif
   EEPROM.write(EEPROM_ADDR_CUE_COUNT, _cueCount);
   int addr = EEPROM_ADDR_FIRST_CUE;
   for (int i = 0; i < _cueCount; ++i) {
@@ -471,9 +463,10 @@ AkiraAnimation* StateController::createAnimation(int index) {
 }
 
 void StateController::setNextAnimation(AkiraAnimation* animation) {
+#ifdef SERIAL_DEBUG
   Serial.print("Displaying cue #");
   Serial.println(_currentCue + 1);
-  
+#endif
   if (_sourceAnimation) {
     delete _sourceAnimation;
   }
@@ -485,7 +478,7 @@ void StateController::setNextAnimation(AkiraAnimation* animation) {
     return;
   }
   
-  if (transition()) {
+  if (allowFollowingTransition() && transition()) {
     transition()->reset();
     _sourceAnimation->setMask(transition()->mask(), Animation::PRE_BLEND);
     _targetAnimation->setMask(transition()->mask(), Animation::OVERLAY);
@@ -500,7 +493,7 @@ void StateController::updateAnimations() {
     return;
   }
   
-  if (transition() && !transition()->isCompleted()) {
+  if (allowFollowingTransition() && transition() && !transition()->isCompleted()) {
     _targetAnimation->transition()->advance();
     _sourceAnimation->draw();
     _targetAnimation->draw();
@@ -513,10 +506,6 @@ void StateController::updateAnimations() {
   else {
     _targetAnimation->draw();
   }
-}
-
-Transition* StateController::transition() const {
-  return _targetAnimation && _sourceAnimation ? _targetAnimation->transition() : 0;
 }
 
 StateController Akira;

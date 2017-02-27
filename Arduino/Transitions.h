@@ -35,8 +35,16 @@ public:
   unsigned int duration() const { return LED_COUNT; }
 };
 
+class Blinds : public AkiraTransition
+{
+public:
+  void update();
+  unsigned int duration() const { return 40; }
+};
+
 extern QuickFade quickFade;
 extern SlowFade slowFade;
 extern QuickSwipe quickSwipe;
+extern Blinds blinds;
 
 
