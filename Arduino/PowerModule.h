@@ -18,6 +18,9 @@ public:
   void turnLedsOn();
   void turnLedsOff();
   void deepSleep();
+  void setBrightness(uint8_t brightness);
+  void setLowPowerMode(bool enable);
+  bool lowPowerMode() const { return _lowPowerMode; }
 
 private:
   void setBatteryState(BatteryState state);
@@ -26,6 +29,9 @@ private:
   BatteryState _batteryState = BATTERY_OK;
   int _lowThreshold = BATT_MILLIVOLT_LOW;
   int _criticalThreshold = BATT_MILLIVOLT_CRITICAL;
+  unsigned int _frame = 0;
+  uint8_t _brightness = 255;
+  bool _lowPowerMode = false;
 };
 
 extern PowerModule Power;

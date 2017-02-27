@@ -12,8 +12,12 @@ void PowerModule::initialize() {
 }
 
 void PowerModule::update() {
+  if (_frame++ % BATT_VOLTAGE_FILT_DOWNSAMPLE) {
+     return;
+  }
+
   int milliVolts = (analogRead(BATT_VOLTAGE_PIN) * BATT_MILLIVOLT_MAX) >> 10;
-  _milliVolts = (_milliVolts * ((1 << BATT_VOLTAGE_FILT_EXP) - 1) + milliVolts) >> BATT_VOLTAGE_FILT_EXP;
+  _milliVolts = _milliVolts ? (_milliVolts * ((1 << BATT_VOLTAGE_FILT_EXP) - 1) + milliVolts) >> BATT_VOLTAGE_FILT_EXP : milliVolts;
   if (_milliVolts < _criticalThreshold) {
     setBatteryState(BATTERY_CRITICAL);
   }
@@ -99,6 +103,28 @@ void PowerModule::deepSleep() {
   if (ledsOn) {
     turnLedsOn();
   }
+}
+
+void PowerModule::setBrightness(uint8_t brightness) {
+  _brightness = brightness;
+  if (_lowPowerMode) {
+    FastLED.setBrightness(_brightness < LOW_POWER_MAX_BRIGHTNESS ? _brightness : LOW_POWER_MAX_BRIGHTNESS);
+    return;
+  }
+  
+  FastLED.setBrightness(_brightness);
+}
+
+void PowerModule::setLowPowerMode(bool enable) {
+  if (enable == _lowPowerMode) {
+    return;
+  }
+#ifdef SERIAL_DEBUG
+  Serial.print("Low-Power mode ");
+  Serial.println(enable ? "enabled." : "disabled.");
+#endif  
+  _lowPowerMode = enable;
+  setBrightness(_brightness);
 }
 
 PowerModule Power;

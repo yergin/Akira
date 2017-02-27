@@ -307,7 +307,17 @@ void FlickerAnimation::draw(unsigned int frame) {
 }
 
 BatteryAnimation::BatteryAnimation() {
-  _litLeds = (Power.milliVolts() - BATT_MILLIVOLT_CRITICAL) * (LED_UI_BATT_LOW_SPAN - LED_UI_BATT_OK_SPAN) / (BATT_MILLIVOLT_FULL - BATT_MILLIVOLT_CRITICAL) + LED_UI_BATT_CRITICAL_SPAN;
+#ifdef SERIAL_DEBUG
+  Serial.print("Battery voltage: ");
+  Serial.print(Power.milliVolts());
+  Serial.println("mV");
+#endif
+  if (Power.milliVolts() > BATT_MILLIVOLT_CRITICAL) {
+    _litLeds = (Power.milliVolts() - BATT_MILLIVOLT_CRITICAL) * (LED_UI_BATT_LOW_SPAN + LED_UI_BATT_OK_SPAN) / (BATT_MILLIVOLT_FULL - BATT_MILLIVOLT_CRITICAL) + LED_UI_BATT_CRITICAL_SPAN;
+  }
+  else {
+    _litLeds = LED_UI_BATT_CRITICAL_SPAN;
+  }
   writeColor(CRGB::Black);
 }
 
@@ -319,7 +329,7 @@ void BatteryAnimation::draw(unsigned int frame) {
   }
 
   for (unsigned int i = LED_UI_BATT_CRITICAL_SPAN; i < LED_UI_BATT_CRITICAL_SPAN + LED_UI_BATT_LOW_SPAN && i < leds; ++i) {
-    writeLed(LED_UI_BATT_START + i, COLOR[PRESET_COL_YELLOW]);
+    writeLed(LED_UI_BATT_START + i, COLOR[PRESET_COL_ORANGE]);
   }
 
   for (unsigned int i = LED_UI_BATT_CRITICAL_SPAN + LED_UI_BATT_LOW_SPAN; i < LED_UI_BATT_SPAN && i < leds; ++i) {

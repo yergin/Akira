@@ -3,7 +3,7 @@
 #include <Arduino.h>
 #include <FastLED.h>
 
-//#define SERIAL_DEBUG
+#define SERIAL_DEBUG
 //#define EXPERIMENTAL_ANIMATIONS
 
 constexpr int LED_CLOCK_PIN = 7;
@@ -14,12 +14,14 @@ constexpr int BUTTON_A_PIN = 4;
 constexpr int BUTTON_B_PIN = 6;
 constexpr int BATT_VOLTAGE_PIN = 21;
 
-constexpr int BATT_MILLIVOLT_MAX = 5580;//5981;
+constexpr int BATT_MILLIVOLT_MAX = 5982; //3562 -> 3710
 constexpr int BATT_MILLIVOLT_FULL = 4200;
-constexpr int BATT_MILLIVOLT_LOW = 3500;
-constexpr int BATT_MILLIVOLT_CRITICAL = 3300;
+constexpr int BATT_MILLIVOLT_LOW = 3100;
+constexpr int BATT_MILLIVOLT_CRITICAL = 3000;
 constexpr int BATT_MILLIVOLT_HYSTERESIS = 200;
-constexpr int BATT_VOLTAGE_FILT_EXP = 3;
+constexpr int BATT_VOLTAGE_FILT_DOWNSAMPLE = 6;
+constexpr int BATT_VOLTAGE_FILT_EXP = 4;
+constexpr uint8_t LOW_POWER_MAX_BRIGHTNESS = 31;
 
 constexpr int LED_COUNT = 72;
 constexpr int LED_UI_SIDE_INDICATOR_SIZE = 4;

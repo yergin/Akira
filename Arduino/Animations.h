@@ -40,7 +40,7 @@ enum ColorPreset {
 constexpr int COLOR[] = { 0x5f5f5f, // white
                           0xff1f1f, // pink
                           0xff0000, // red
-                          0xff2f00, // orange
+                          0xff2700, // orange
                           0xdf7700, // yellow
                           0x8fcf00, // lime
                           0x00ff00, // green

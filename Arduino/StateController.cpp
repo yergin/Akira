@@ -163,7 +163,7 @@ void BrightnessMode::apply() {
   Serial.print("Brightness: ");
   Serial.println(level());
 #endif
-  FastLED.setBrightness(level());
+  Power.setBrightness(level());
 }
 
 void ProgramMode::enter(Command command) {
@@ -261,6 +261,15 @@ void StateController::initialize() {
 
 void StateController::update() {
   Power.update();
+  if (Power.batteryState() == BATTERY_CRITICAL) {
+    setOperatingMode(MODE_SLEEP);
+  }
+  else if (Power.batteryState() == BATTERY_LOW) {
+    Power.setLowPowerMode(true);
+  }
+  else {
+    Power.setLowPowerMode(false);    
+  }
   respondToButtons();
   _modes[_currentMode]->update();
   updateAnimations();
