@@ -9,24 +9,38 @@ SnoozeBlock SnoozeConfig(Digital);
 void PowerModule::initialize() {
   Digital.pinMode(BUTTON_A_PIN, INPUT_PULLUP, FALLING);
   Digital.pinMode(BUTTON_B_PIN, INPUT_PULLUP, FALLING);
+  analogReference(INTERNAL);
 }
 
 void PowerModule::update() {
   if (_frame++ % BATT_VOLTAGE_FILT_DOWNSAMPLE) {
-     return;
+    return;
   }
-
+  
   int milliVolts = (analogRead(BATT_VOLTAGE_PIN) * BATT_MILLIVOLT_MAX) >> 10;
   _milliVolts = _milliVolts ? (_milliVolts * ((1 << BATT_VOLTAGE_FILT_EXP) - 1) + milliVolts) >> BATT_VOLTAGE_FILT_EXP : milliVolts;
   if (_milliVolts < _criticalThreshold) {
     setBatteryState(BATTERY_CRITICAL);
   }
   else if (_milliVolts < _lowThreshold) {
-    setBatteryState(BATTERY_CRITICAL);  
+    setBatteryState(BATTERY_LOW);  
   }
   else {
     setBatteryState(BATTERY_OK);
   }
+
+#ifdef SERIAL_DEBUG
+  if ((_frame - 1) % (BATT_VOLTAGE_FILT_DOWNSAMPLE << 4) == 0) {
+    Serial.print("Battery voltage: ");
+    Serial.print(_milliVolts);
+    Serial.print("mV (");
+    switch (_batteryState) {
+      case BATTERY_OK: Serial.println("OK)"); break;
+      case BATTERY_LOW: Serial.println("LOW)"); break;
+      case BATTERY_CRITICAL: Serial.println("CRITICAL)"); break;
+    }
+  }
+#endif
 }
 
 void PowerModule::setBatteryState(BatteryState state) {
