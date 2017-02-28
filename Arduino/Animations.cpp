@@ -338,11 +338,11 @@ void BatteryAnimation::draw(unsigned int frame) {
   }
 
   for (unsigned int i = LED_UI_BATT_CRITICAL_SPAN + LED_UI_BATT_CRITICAL_OK1; i < LED_UI_BATT_CRITICAL_SPAN + LED_UI_BATT_CRITICAL_OK2 && i < leds; ++i) {
-    writeLed(LED_UI_BATT_START + i, COLOR[PRESET_COL_GREEN]);
+    writeLed(LED_UI_BATT_START + i, COLOR[PRESET_COL_LIME]);
   }
   
   for (unsigned int i = LED_UI_BATT_CRITICAL_SPAN + LED_UI_BATT_CRITICAL_OK2; i < LED_UI_BATT_SPAN && i < leds; ++i) {
-    writeLed(LED_UI_BATT_START + i, COLOR[PRESET_COL_BLUE]);
+    writeLed(LED_UI_BATT_START + i, COLOR[PRESET_COL_GREEN]);
   }
 }
 
