@@ -21,6 +21,8 @@ public:
   void setBrightness(uint8_t brightness);
   void setLowPowerMode(bool enable);
   bool lowPowerMode() const { return _lowPowerMode; }
+  void setDimMode(bool enable);
+  bool dimMode() const { return _dimMode; }
 
 private:
   void setBatteryState(BatteryState state);
@@ -32,6 +34,7 @@ private:
   unsigned int _frame = 0;
   uint8_t _brightness = 255;
   bool _lowPowerMode = false;
+  bool _dimMode = false;
 };
 
 extern PowerModule Power;

@@ -86,8 +86,8 @@ public:
 
   ColorPreset colorPreset1() const { return _cue.descr.color1; }
   ColorPreset colorPreset2() const { return _cue.descr.color2; }
-  CRGB color1() const { return COLOR[colorPreset1()]; }
-  CRGB color2() const { return colorPreset1() == PRESET_COL_RAINBOW_OR_BLACK ? COLOR[PRESET_COL_RAINBOW_OR_BLACK] : COLOR[colorPreset2()]; }
+  const CRGB& color1() const { return _color1; }
+  const CRGB& color2() const { return _color2; }
 
   void draw();
 
@@ -108,6 +108,8 @@ private:
   };
 
   Cue _cue;
+  CRGB _color1 = COLOR[PRESET_COL_WHITE];
+  CRGB _color2 = COLOR[PRESET_COL_RAINBOW_OR_BLACK];
   unsigned int _frame = 0;
 };
 
@@ -193,7 +195,7 @@ class SparkleAnimation : public AkiraAnimation
 protected:
   static constexpr int SPARK_COUNT = 1000;
   static constexpr int SPARK_INTERVAL = 1;
-  static constexpr int SPARK_MULTIPLIER = 4;
+  static constexpr int SPARK_MULTIPLIER = 5;
   
   struct Spark {
     int pos = 0;

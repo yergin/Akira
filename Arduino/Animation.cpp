@@ -10,7 +10,7 @@ void Animation::setMask(char* mask, MaskOperation op) {
   _maskOp = op;
 }
 
-void Animation::writeLed(int led, CRGB color) {
+void Animation::writeLed(int led, const CRGB& color) {
   if (_mask) {
     // Optimized color scaling by 0-255
     // Source: https://research.swtch.com/divmult
@@ -32,13 +32,13 @@ void Animation::writeLed(int led, CRGB color) {
   }
 }
 
-void Animation::writeColor(CRGB color) {
+void Animation::writeColor(const CRGB& color) {
   for (int i = 0; i < _ledCount; ++i) {
     writeLed(i, color);
   }
 }
 
-void Animation::colorScaleSum(CRGB* out, CRGB color, int scale)
+void Animation::colorScaleSum(CRGB* out, const CRGB& color, int scale)
 {
   // Optimized color scaling by 0-255
   // Source: https://research.swtch.com/divmult

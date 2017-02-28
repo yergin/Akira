@@ -121,24 +121,41 @@ void PowerModule::deepSleep() {
 
 void PowerModule::setBrightness(uint8_t brightness) {
   _brightness = brightness;
-  if (_lowPowerMode) {
-    FastLED.setBrightness(_brightness < LOW_POWER_MAX_BRIGHTNESS ? _brightness : LOW_POWER_MAX_BRIGHTNESS);
-    return;
+
+  if (_dimMode) {
+    brightness >>= LED_DIM_SHIFT;
+    brightness = brightness < LED_DIM_MIN ? LED_DIM_MIN : brightness;
   }
   
-  FastLED.setBrightness(_brightness);
+  if (_lowPowerMode) {
+    brightness = brightness < LOW_POWER_MAX_BRIGHTNESS ? brightness : LOW_POWER_MAX_BRIGHTNESS;
+  }
+  
+  FastLED.setBrightness(brightness);
 }
 
 void PowerModule::setLowPowerMode(bool enable) {
   if (enable == _lowPowerMode) {
     return;
   }
+  _lowPowerMode = enable;
 #ifdef SERIAL_DEBUG
   Serial.print("Low-Power mode ");
   Serial.println(enable ? "enabled." : "disabled.");
 #endif  
-  _lowPowerMode = enable;
   setBrightness(_brightness);
+}
+
+void PowerModule::setDimMode(bool enable) {
+  if (enable == _dimMode) {
+    return;
+  }
+  _dimMode = enable;
+#ifdef SERIAL_DEBUG
+  Serial.print("Dim mode ");
+  Serial.println(enable ? "enabled." : "disabled.");
+#endif  
+  setBrightness(_brightness);  
 }
 
 PowerModule Power;

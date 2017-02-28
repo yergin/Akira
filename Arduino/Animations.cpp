@@ -89,11 +89,14 @@ void AkiraAnimation::copyToDescription(CueDescription* descr) {
 
 void AkiraAnimation::setColorPreset1(ColorPreset preset) {
   _cue.descr.color1 = preset;
+  _color1 = COLOR[preset];
+  _color2 = _cue.descr.color1 == PRESET_COL_RAINBOW_OR_BLACK ? COLOR[PRESET_COL_RAINBOW_OR_BLACK] : COLOR[_cue.descr.color2]; ;
   colorPresetsChanged();
 }
 
 void AkiraAnimation::setColorPreset2(ColorPreset preset) {
   _cue.descr.color2 = preset;
+  _color2 = _cue.descr.color1 == PRESET_COL_RAINBOW_OR_BLACK ? COLOR[PRESET_COL_RAINBOW_OR_BLACK] : COLOR[_cue.descr.color2]; ;
   colorPresetsChanged();    
 }
 
@@ -307,33 +310,39 @@ void FlickerAnimation::draw(unsigned int frame) {
 }
 
 BatteryAnimation::BatteryAnimation() {
-#ifdef SERIAL_DEBUG
-  Serial.print("Battery voltage: ");
-  Serial.print(Power.milliVolts());
-  Serial.println("mV");
-#endif
-  if (Power.milliVolts() > BATT_MILLIVOLT_CRITICAL) {
-    _litLeds = (Power.milliVolts() - BATT_MILLIVOLT_CRITICAL) * (LED_UI_BATT_LOW_SPAN + LED_UI_BATT_OK_SPAN) / (BATT_MILLIVOLT_FULL - BATT_MILLIVOLT_CRITICAL) + LED_UI_BATT_CRITICAL_SPAN;
-  }
-  else {
-    _litLeds = LED_UI_BATT_CRITICAL_SPAN;
-  }
   writeColor(CRGB::Black);
 }
 
 void BatteryAnimation::draw(unsigned int frame) {
-  unsigned int leds = _litLeds < (frame << 1) ? _litLeds : (frame << 1);
+  if (frame % FPS == 0) {
+    if (Power.milliVolts() > BATT_MILLIVOLT_CRITICAL) {
+      _litLeds = (Power.milliVolts() - BATT_MILLIVOLT_CRITICAL) * LED_UI_BATT_CRITICAL_MAX / (BATT_MILLIVOLT_FULL - BATT_MILLIVOLT_CRITICAL) + LED_UI_BATT_CRITICAL_SPAN;
+    }
+    else {
+      _litLeds = LED_UI_BATT_CRITICAL_SPAN;
+    }
+  }
+  
+  unsigned int leds = _litLeds < frame ? _litLeds : frame;
   
   for (unsigned int i = 0; i < LED_UI_BATT_CRITICAL_SPAN && i < leds; ++i) {
     writeLed(LED_UI_BATT_START + i, COLOR[PRESET_COL_RED]);
   }
 
-  for (unsigned int i = LED_UI_BATT_CRITICAL_SPAN; i < LED_UI_BATT_CRITICAL_SPAN + LED_UI_BATT_LOW_SPAN && i < leds; ++i) {
+  for (unsigned int i = LED_UI_BATT_CRITICAL_SPAN; i < LED_UI_BATT_CRITICAL_SPAN + LED_UI_BATT_CRITICAL_LOW && i < leds; ++i) {
     writeLed(LED_UI_BATT_START + i, COLOR[PRESET_COL_ORANGE]);
   }
+  
+  for (unsigned int i = LED_UI_BATT_CRITICAL_SPAN + LED_UI_BATT_CRITICAL_LOW; i < LED_UI_BATT_CRITICAL_SPAN + LED_UI_BATT_CRITICAL_OK1 && i < leds; ++i) {
+    writeLed(LED_UI_BATT_START + i, COLOR[PRESET_COL_YELLOW]);
+  }
 
-  for (unsigned int i = LED_UI_BATT_CRITICAL_SPAN + LED_UI_BATT_LOW_SPAN; i < LED_UI_BATT_SPAN && i < leds; ++i) {
+  for (unsigned int i = LED_UI_BATT_CRITICAL_SPAN + LED_UI_BATT_CRITICAL_OK1; i < LED_UI_BATT_CRITICAL_SPAN + LED_UI_BATT_CRITICAL_OK2 && i < leds; ++i) {
     writeLed(LED_UI_BATT_START + i, COLOR[PRESET_COL_GREEN]);
+  }
+  
+  for (unsigned int i = LED_UI_BATT_CRITICAL_SPAN + LED_UI_BATT_CRITICAL_OK2; i < LED_UI_BATT_SPAN && i < leds; ++i) {
+    writeLed(LED_UI_BATT_START + i, COLOR[PRESET_COL_BLUE]);
   }
 }
 

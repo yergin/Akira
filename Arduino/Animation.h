@@ -10,7 +10,7 @@ public:
     PRE_BLEND
   };
 
-  static void colorScaleSum(CRGB* out, CRGB col, int scale);
+  static void colorScaleSum(CRGB* out, const CRGB& col, int scale);
   
   Animation(CRGB* ledBuffer, int ledCount);
 
@@ -20,8 +20,8 @@ public:
   int ledCount() const { return _ledCount; }
 
 protected:
-  void writeLed(int led, CRGB color);
-  void writeColor(CRGB color);
+  void writeLed(int led, const CRGB& color);
+  void writeColor(const CRGB& color);
 
 private:
   unsigned int _ledCount;

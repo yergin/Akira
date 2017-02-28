@@ -73,6 +73,7 @@ void SleepMode::update() {
 }
 
 void ProgramEnterMode::enter(Command command) {
+  Power.setDimMode(true);
   shortBlink();
   execute(command);
   Akira.showBattery();
@@ -95,6 +96,7 @@ void ProgramEnterMode::execute(Command command) {
 
 void ProgramEnterMode::leave() {
   Akira.hideBattery();
+  Power.setDimMode(false);
 }
 
 constexpr uint8_t BrightnessMode::_levels[];
