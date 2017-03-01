@@ -246,7 +246,12 @@ void StateController::storeDemoCues() {
 void StateController::initialize() {
   Power.initialize();
   Buttons.update();
+
+#ifdef INIT_EEPROM
+  if (1) {
+#else
   if (Buttons.isButtonDown(BUTTON_A)) {
+#endif
     factoryReset();
   }
 

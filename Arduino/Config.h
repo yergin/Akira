@@ -3,7 +3,9 @@
 #include <Arduino.h>
 #include <FastLED.h>
 
+#define INIT_EEPROM
 #define SERIAL_DEBUG
+#define DISABLE_SLEEP
 //#define EXPERIMENTAL_ANIMATIONS
 
 constexpr int LED_CLOCK_PIN = 7;

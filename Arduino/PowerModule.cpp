@@ -112,7 +112,19 @@ void PowerModule::deepSleep() {
   Buttons.sleep();
   FastLED.showColor(CRGB::Black);
   FastLED.delay(5);
+#ifdef DISABLE_SLEEP
+  while (digitalRead(BUTTON_A_PIN) == LOW || digitalRead(BUTTON_B_PIN) == LOW) {
+    FastLED.delay(5);
+  }
+  while (digitalRead(BUTTON_A_PIN) == HIGH && digitalRead(BUTTON_B_PIN) == HIGH) {
+    FastLED.delay(5);
+  }
+  while (digitalRead(BUTTON_A_PIN) == LOW || digitalRead(BUTTON_B_PIN) == LOW) {
+    FastLED.delay(5);
+  }
+#else
   Snooze.deepSleep(SnoozeConfig);
+#endif
   Buttons.wakeup();
   if (ledsOn) {
     turnLedsOn();
