@@ -119,9 +119,6 @@ void PowerModule::deepSleep() {
   while (digitalRead(BUTTON_A_PIN) == HIGH && digitalRead(BUTTON_B_PIN) == HIGH) {
     FastLED.delay(5);
   }
-  while (digitalRead(BUTTON_A_PIN) == LOW || digitalRead(BUTTON_B_PIN) == LOW) {
-    FastLED.delay(5);
-  }
 #else
   Snooze.deepSleep(SnoozeConfig);
 #endif
