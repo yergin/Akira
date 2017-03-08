@@ -5,7 +5,7 @@
 
 namespace Yabl {
 
-typedef uint8_t Event;
+typedef uint16_t Event;
 
 static constexpr Event PRESS = 0x01;
 static constexpr Event RELEASE = 0x02;
@@ -15,7 +15,7 @@ static constexpr Event DOUBLE_TAP = 0x10;
 static constexpr Event HOLD = 0x20;
 static constexpr Event LONG_RELEASE = 0x40;
 static constexpr Event USER_EVENT = 0x80;
-static constexpr Event ALL_EVENTS = 0xFF;
+static constexpr Event ALL_EVENTS = 0xFFFF;
 
 class Button : public Bounce
 {
@@ -68,7 +68,7 @@ private:
   void triggerEvent(Event event);
   void clearEvents() { _currentEvents = 0; }
 
-  static constexpr int EVENT_COUNT = 8;
+  static constexpr int EVENT_COUNT = 16;
 
   bool _inverted = true;
   unsigned int _holdTime = 400;
