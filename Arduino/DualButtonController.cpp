@@ -13,6 +13,8 @@ Controller::Controller(int pinA, int pinB) {
   _buttonB = &_button2;
   _buttonA->update();
   _buttonB->update();
+  _buttonA->setCallback(onButtonEvent);
+  _buttonB->setCallback(onButtonEvent);
 }
 
 void Controller::update() {
@@ -22,10 +24,10 @@ void Controller::update() {
   _buttonA->update();
   _buttonB->update();
 
-  bool anyButtonJustPressed = _buttonA->triggered(Momentary::PRESS) || _buttonB->triggered(Momentary::PRESS);
-  bool bothButtonsJustPressed = _buttonA->triggered(Momentary::PRESS) && _buttonB->triggered(Momentary::PRESS);
-  bool anyButtonDown = _buttonA->isDown() || _buttonB->isDown();
-  bool bothButtonsDown = _buttonA->isDown() && _buttonB->isDown();
+  bool anyButtonJustPressed = _buttonA->triggered(PRESS) || _buttonB->triggered(PRESS);
+  bool bothButtonsJustPressed = _buttonA->triggered(PRESS) && _buttonB->triggered(PRESS);
+  bool anyButtonDown = _buttonA->down() || _buttonB->down();
+  bool bothButtonsDown = _buttonA->down() && _buttonB->down();
 
   if (bothButtonsJustPressed) {
     triggerEventForButtonsABTogether(PRESS);
@@ -46,22 +48,22 @@ void Controller::update() {
   else if (bothButtonsDown) {
     if (!gestureIncludes(BUTTONS_A_B_TOGETHER, HOLD) && gestureIncludes(BUTTONS_A_B_TOGETHER, PRESS) &&
                                                         ms >= _secondButtonPressed + _simultaneousHoldTime) {
-      _buttonA->suppressInGesture((Momentary::Event)HOLD);
-      _buttonB->suppressInGesture((Momentary::Event)HOLD);
-      _buttonA->suppressInGesture((Momentary::Event)SINGLE_TAP);
-      _buttonB->suppressInGesture((Momentary::Event)SINGLE_TAP);
+      _buttonA->suppressOnce(HOLD);
+      _buttonB->suppressOnce(HOLD);
+      _buttonA->suppressOnce(SINGLE_TAP);
+      _buttonB->suppressOnce(SINGLE_TAP);
       triggerEventForButtonsABTogether(HOLD);
     }
   }
   else if (anyButtonDown) {
-    Momentary* downBtn = _buttonA->isDown() ? _buttonA : _buttonB;
-    Momentary* upBtn = _buttonA->isDown() ? _buttonB : _buttonA;
-    if (!downBtn->gestureIncludes(Momentary::USER_EVENT) && !upBtn->gestureIncludes(Momentary::USER_EVENT) && 
+    Button* downBtn = _buttonA->down() ? _buttonA : _buttonB;
+    Button* upBtn = _buttonA->down() ? _buttonB : _buttonA;
+    if (!downBtn->gestureIncludes(USER_EVENT) && !upBtn->gestureIncludes(USER_EVENT) && 
         !gestureIncludes(BUTTONS_A_B_TOGETHER, PRESS) && ms > _firstButtonPressed + _simultaneousPressThreshold) {
       downBtn->triggerUserEvent();
     }
   }
-  else if (_buttonA->triggered(Momentary::RELEASE) || _buttonB->triggered(Momentary::RELEASE)) {
+  else if (_buttonA->triggered(RELEASE) || _buttonB->triggered(RELEASE)) {
     if (gestureIncludes(BUTTONS_A_B_TOGETHER, PRESS)) {
       triggerEventForButtonsABTogether(RELEASE);
     }
@@ -83,7 +85,7 @@ void Controller::reset() {
 void Controller::wakeup() {
   _buttonA->wakeup();
   _buttonB->wakeup();
-  if (_buttonA->isDown() || _buttonB->isDown()) {
+  if (_buttonA->down() || _buttonB->down()) {
     _firstButtonPressed = millis();
   }
   _secondButtonPressed = 0;
@@ -102,11 +104,11 @@ void Controller::swapButtons() {
   _buttonB = _buttonsSwapped ? &_button1 : &_button2;
 }
 
-bool Controller::triggered(Button button) const
+bool Controller::activity(ButtonId button) const
 {
   switch (button) {
-    case BUTTON_A: return _buttonA->triggered();
-    case BUTTON_B: return _buttonB->triggered();
+    case BUTTON_A: return _buttonA->activity();
+    case BUTTON_B: return _buttonB->activity();
     default:
       break;
   }
@@ -114,33 +116,33 @@ bool Controller::triggered(Button button) const
   return _currentEventsForButtonsABTogether != 0;
 }
 
-bool Controller::triggered(Button button, Event event) const {
+bool Controller::triggered(ButtonId button, Event event) const {
   switch (button) {
-    case BUTTON_A: return _buttonA->triggered((Momentary::Event)event);
-    case BUTTON_B: return _buttonB->triggered((Momentary::Event)event);
+    case BUTTON_A: return _buttonA->triggered(event);
+    case BUTTON_B: return _buttonB->triggered(event);
     default:
       break;
   }
 
-  return _currentEventsForButtonsABTogether & (1 << static_cast<int>(event));;
+  return _currentEventsForButtonsABTogether & event;
 }
 
-bool Controller::gestureIncludes(Button button, Event event) const {
+bool Controller::gestureIncludes(ButtonId button, Event event) const {
   switch (button) {
-    case BUTTON_A: return _buttonA->gestureIncludes((Momentary::Event)event);
-    case BUTTON_B: return _buttonB->gestureIncludes((Momentary::Event)event);
+    case BUTTON_A: return _buttonA->gestureIncludes(event);
+    case BUTTON_B: return _buttonB->gestureIncludes(event);
     default:
       break;
   }
 
-  return _gestureEventsForButtonsABTogether & (1 << static_cast<int>(event));
+  return _gestureEventsForButtonsABTogether & event;
 }
 
 bool Controller::gestureStarted() const {
   return gestureStarted(BUTTON_A) || gestureStarted(BUTTON_B) || gestureStarted(BUTTONS_A_B_TOGETHER);
 }
 
-bool Controller::gestureStarted(Button button) const {
+bool Controller::gestureStarted(ButtonId button) const {
   switch (button) {
     case BUTTON_A: return _buttonA->gestureStarted();
     case BUTTON_B: return _buttonB->gestureStarted();
@@ -152,8 +154,8 @@ bool Controller::gestureStarted(Button button) const {
 }
 
 void Controller::triggerEventForButtonsABTogether(Event event) {
-  _currentEventsForButtonsABTogether |= 1 << static_cast<int>(event);
-  _gestureEventsForButtonsABTogether |= 1 << static_cast<int>(event);
+  _currentEventsForButtonsABTogether |= event;
+  _gestureEventsForButtonsABTogether |= event;
 #ifdef SERIAL_DEBUG
   Serial.print("Dual Buttons: Triggering event: ");
   switch (event) {
@@ -165,13 +167,13 @@ void Controller::triggerEventForButtonsABTogether(Event event) {
 #endif
 }
 
-bool Controller::isButtonDown(Button button) const {
+bool Controller::isButtonDown(ButtonId button) const {
   switch (button) {
-    case BUTTON_A: return _buttonA->isDown();
-    case BUTTON_B: return _buttonB->isDown();
+    case BUTTON_A: return _buttonA->down();
+    case BUTTON_B: return _buttonB->down();
     default: break;
   }
-  return _buttonA->isDown() && _buttonB->isDown();
+  return _buttonA->down() && _buttonB->down();
 }
 
 void Controller::performRequest(Request request) {
@@ -189,6 +191,22 @@ void Controller::performRequest(Request request) {
       }
     default:
       break;
+  }
+}
+
+void Controller::onButtonEvent(Button& button, Event event) {
+  Serial.print(button == *Buttons._buttonA ?  "Button A: " : "Button B: ");
+  
+  switch (event) {
+    case PRESS: Serial.print("PRESS\n"); break;
+    case RELEASE: Serial.print("RELEASE\n"); break;
+    case SHORT_RELEASE: Serial.print("SHORT_RELEASE\n"); break;
+    case SINGLE_TAP: Serial.print("SINGLE_TAP\n"); break;
+    case DOUBLE_TAP: Serial.print("DOUBLE_TAP\n"); break;
+    case HOLD: Serial.print("HOLD\n"); break;
+    case LONG_RELEASE: Serial.print("LONG_RELEASE\n"); break;
+    case USER_EVENT: Serial.print("EXCLUSIVE_PRESS\n"); break;
+    default: break;
   }
 }
 

@@ -29,6 +29,7 @@ private:
 
   int _milliVolts = 0;
   BatteryState _batteryState = BATTERY_OK;
+  uint16_t _battMillivoltMax = 0;
   int _lowThreshold = BATT_MILLIVOLT_LOW;
   int _criticalThreshold = BATT_MILLIVOLT_CRITICAL;
   unsigned int _frame = 0;

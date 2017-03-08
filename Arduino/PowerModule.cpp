@@ -1,15 +1,42 @@
 #include "PowerModule.h"
 #include "DualButtonController.h"
 #include <Arduino.h>
+#include <EEPROM.h>
 #include <Snooze.h>
 
 SnoozeDigital Digital;
 SnoozeBlock SnoozeConfig(Digital);
 
+union UnsignedShort {
+  uint16_t val;
+  char data[2];
+};
+
 void PowerModule::initialize() {
   Digital.pinMode(BUTTON_A_PIN, INPUT_PULLUP, FALLING);
   Digital.pinMode(BUTTON_B_PIN, INPUT_PULLUP, FALLING);
   analogReference(INTERNAL);
+
+  UnsignedShort maxMillivolts;
+#ifdef INIT_EEPROM
+  maxMillivolts.val = BATT_MILLIVOLT_MAX;
+  EEPROM.write(EEPROM_ADDR_BATT_MILLIVOLT_MAX, maxMillivolts.data[0]);
+  EEPROM.write(EEPROM_ADDR_BATT_MILLIVOLT_MAX + 1, maxMillivolts.data[1]);
+#ifdef SERIAL_DEBUG
+  Serial.print("Storing max battery voltage: ");
+  Serial.print(maxMillivolts.val);
+  Serial.println("mV");
+#endif
+#else
+  maxMillivolts.data[0] = EEPROM.read(EEPROM_ADDR_BATT_MILLIVOLT_MAX);
+  maxMillivolts.data[1] = EEPROM.read(EEPROM_ADDR_BATT_MILLIVOLT_MAX + 1);
+#ifdef SERIAL_DEBUG
+  Serial.print("Retrieving max battery voltage: ");
+  Serial.print(maxMillivolts.val);
+  Serial.println("mV");
+#endif
+#endif
+  _battMillivoltMax = maxMillivolts.val;
 }
 
 void PowerModule::update() {
@@ -17,7 +44,7 @@ void PowerModule::update() {
     return;
   }
   
-  int milliVolts = (analogRead(BATT_VOLTAGE_PIN) * BATT_MILLIVOLT_MAX) >> 10;
+  int milliVolts = (analogRead(BATT_VOLTAGE_PIN) * _battMillivoltMax) >> 10;
   _milliVolts = _milliVolts ? (_milliVolts * ((1 << BATT_VOLTAGE_FILT_EXP) - 1) + milliVolts) >> BATT_VOLTAGE_FILT_EXP : milliVolts;
   if (_milliVolts < _criticalThreshold) {
     setBatteryState(BATTERY_CRITICAL);
@@ -76,6 +103,9 @@ void PowerModule::turnLedsOn() {
   Serial.println("Turning LEDs on.");
 #endif
   digitalWrite(LED_ENABLE_PIN, HIGH);
+#ifdef SUPPORT_BROKEN_LIGHT_STAFF
+  digitalWrite(LED_ENABLE_PIN2, HIGH);
+#endif
   delay(1);
   if (!areLedsOn()) {
 #ifdef SERIAL_DEBUG
@@ -94,6 +124,9 @@ void PowerModule::turnLedsOff() {
   pinMode(LED_CLOCK_PIN, INPUT);
   pinMode(LED_DATA_PIN, INPUT);
   digitalWrite(LED_ENABLE_PIN, LOW);
+#ifdef SUPPORT_BROKEN_LIGHT_STAFF
+  digitalWrite(LED_ENABLE_PIN2, LOW);
+#endif
   delay(1);
   if (areLedsOn()) {
 #ifdef SERIAL_DEBUG

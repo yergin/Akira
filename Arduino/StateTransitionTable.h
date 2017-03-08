@@ -35,10 +35,10 @@ enum Command {
 using namespace DualButtons;
 
 struct StateTransition {
-  bool isMatch(Mode mode, Button btn, Event evt) const { return mode == currentMode && btn == button && evt == buttonEvent; }
+  bool isMatch(Mode mode, ButtonId btn, Event evt) const { return mode == currentMode && btn == button && evt == buttonEvent; }
   
   Mode currentMode;
-  Button button;
+  ButtonId button;
   Event buttonEvent;
   Mode nextMode;
   Command command;

@@ -12,6 +12,9 @@ void setup() {
 #endif
 
   pinMode(LED_ENABLE_PIN, OUTPUT);
+#ifdef SUPPORT_BROKEN_LIGHT_STAFF
+  pinMode(LED_ENABLE_PIN2, OUTPUT);
+#endif
   pinMode(LED_SENSE_PIN, INPUT_PULLUP);
   FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR, DATA_RATE_MHZ(1)>(leds, LED_COUNT);
 

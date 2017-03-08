@@ -287,7 +287,7 @@ void StateController::respondToButtons() {
   using namespace DualButtons;
   
   Buttons.update();
-  if (!Buttons.triggered()) {
+  if (!Buttons.activity()) {
     return;
   }
 

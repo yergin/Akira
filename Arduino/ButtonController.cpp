@@ -1,9 +1,9 @@
 #include "ButtonController.h"
 #include "Arduino.h"
 
-#define SERIAL_DEBUG
+namespace Yabl {
 
-void Momentary::update() {
+void Button::update() {
   unsigned long elasped = millis() - previous_millis;
 
   if (!gestureStarted()) {
@@ -18,14 +18,14 @@ void Momentary::update() {
 
   clearEvents();
 
-  if (wasPressed()) {
+  if (pressed()) {
     triggerEvent(PRESS);
       
     if (gestureIncludes(RELEASE) && elasped < _doubleTapTime) {
       triggerEvent(DOUBLE_TAP);
     }
   }
-  else if (wasReleased()) {
+  else if (released()) {
     if (!gestureStarted()) {
       return;
     }
@@ -42,7 +42,7 @@ void Momentary::update() {
       triggerEvent(SHORT_RELEASE);
     }
   }
-  else if (isDown()) {
+  else if (down()) {
     if (gestureStarted() && !gestureIncludes(HOLD) && !gestureIncludes(RELEASE) && elasped >= _holdTime) {
       triggerEvent(HOLD);
     }
@@ -55,7 +55,7 @@ void Momentary::update() {
   }
 }
 
-void Momentary::reset()
+void Button::reset()
 {
   _currentEvents = 0;
   _gestureEvents = 0;
@@ -63,39 +63,42 @@ void Momentary::reset()
   _reset = false;
 }
 
-void Momentary::wakeup() {
+void Button::wakeup() {
   previous_millis = millis();
 }
 
-void Momentary::triggerEvent(Event event) {
-#ifdef SERIAL_DEBUG
-  if (_suppressEvents & (1 << static_cast<int>(event))) { 
-    Serial.print("Momentary: Suppressed event: ");
-  }
-  else {
-    Serial.print("Momentary: Triggering event: ");    
-  }
-  switch (event) {
-    case PRESS: Serial.print("PRESS\n"); break;
-    case RELEASE: Serial.print("RELEASE\n"); break;
-    case SHORT_RELEASE: Serial.print("SHORT_RELEASE\n"); break;
-    case SINGLE_TAP: Serial.print("SINGLE_TAP\n"); break;
-    case DOUBLE_TAP: Serial.print("DOUBLE_TAP\n"); break;
-    case HOLD: Serial.print("HOLD\n"); break;
-    case LONG_RELEASE: Serial.print("LONG_RELEASE\n"); break;
-    case USER_EVENT: Serial.print("USER_EVENT\n"); break;
-    case EVENT_COUNT: break;
-  }
-#endif
-  if (_suppressEvents & (1 << static_cast<int>(event))) { 
+void Button::triggerEvent(Event event) {
+  if (_suppressEvents & event) { 
     return;
   }
   
-  _currentEvents |= 1 << static_cast<int>(event);
-  _gestureEvents |= 1 << static_cast<int>(event);
-  
-  if (_listener) {
-    _listener->buttonEvent(this, event);
+  _currentEvents |= event;
+  _gestureEvents |= event;
+
+  switch (_callbacks[event].type) {
+    case Callback::SIMPLE: (_callbacks[event].callback.simple)(); break;
+    case Callback::WITH_BUTTON_AND_EVENT: (_callbacks[event].callback.withButtonAndEvent)(*this, event); break;
+    case Callback::NONE: break;
   }
 }
+
+void Button::setCallback(CallbackSimple callback, Event forEvents) {
+  for (int i = 0; i < EVENT_COUNT; ++i) {
+    if (forEvents & (1 << i)) {
+      _callbacks[i].type = Callback::SIMPLE;
+      _callbacks[i].callback.simple = callback;
+    }
+  }
+}
+
+void Button::setCallback(CallbackWithButtonAndEvent callback, Event forEvents) {
+  for (int i = 0; i < EVENT_COUNT; ++i) {
+    if (forEvents & (1 << i)) {
+      _callbacks[i].type = Callback::WITH_BUTTON_AND_EVENT;
+      _callbacks[i].callback.withButtonAndEvent = callback;
+    }
+  }
+}
+
+} // namespace Yabl
 

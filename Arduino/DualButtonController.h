@@ -4,18 +4,9 @@
 
 namespace DualButtons {
 
-enum Event {
-  PRESS = 0,
-  RELEASE,
-  SHORT_RELEASE,
-  SINGLE_TAP,
-  DOUBLE_TAP,
-  HOLD,
-  LONG_RELEASE,
-  EXCLUSIVE_PRESS
-};
+static constexpr Event EXCLUSIVE_PRESS = USER_EVENT;
 
-enum Button {
+enum ButtonId {
   BUTTON_A = 0,
   BUTTON_B,
   BUTTONS_A_B_TOGETHER
@@ -27,24 +18,29 @@ enum Request {
   SWAP_BUTTONS_ON_RELEASE
 };
 
+using namespace Yabl;
+
 class Controller
 {
 public:
   Controller(int pinA, int pinB);
 
-  bool triggered() const { return triggered(BUTTON_A) || triggered(BUTTON_B) || triggered(BUTTONS_A_B_TOGETHER); }
-  bool triggered(Button button) const;
-  bool triggered(Button button, Event event) const;
-  bool gestureIncludes(Button button, Event event) const;
+  bool activity() const { return activity(BUTTON_A) || activity(BUTTON_B) || activity(BUTTONS_A_B_TOGETHER); }
+  bool activity(ButtonId button) const;
+  bool triggered(ButtonId button, Event event) const;
+  bool gestureIncludes(ButtonId button, Event event) const;
   bool gestureStarted() const;
-  bool gestureStarted(Button button) const;
+  bool gestureStarted(ButtonId button) const;
   void performRequest(Request request);
   bool areButtonsSwapped() const { return _buttonsSwapped; }
-  bool isButtonDown(Button button) const;
+  bool isButtonDown(ButtonId button) const;
   void update();
   void reset();
   void sleep() { reset(); }
   void wakeup(); 
+
+protected:
+    static void onButtonEvent(Button& button, Event event);
 
 private:
   void swapButtons();
@@ -52,10 +48,10 @@ private:
   void clearEventsForButtonsABTogether() { _currentEventsForButtonsABTogether = 0; }
   void resetButtonsABTogether();
   
-  Momentary _button1;
-  Momentary _button2;
-  Momentary* _buttonA = 0;
-  Momentary* _buttonB = 0;
+  Button _button1;
+  Button _button2;
+  Button* _buttonA = 0;
+  Button* _buttonB = 0;
   int _simultaneousPressThreshold = 100;
   int _simultaneousHoldTime = 300;
   bool _buttonsSwapped = false;
