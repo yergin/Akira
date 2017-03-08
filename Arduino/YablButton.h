@@ -68,7 +68,7 @@ private:
   void triggerEvent(Event event);
   void clearEvents() { _currentEvents = 0; }
 
-  static constexpr int EVENT_COUNT = 16;
+  static constexpr int EVENT_COUNT = sizeof(Event) * 8;
 
   bool _inverted = true;
   unsigned int _holdTime = 400;
