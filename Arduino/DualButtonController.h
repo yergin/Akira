@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ButtonController.h"
+#include "YablButton.h"
 
 namespace DualButtons {
 

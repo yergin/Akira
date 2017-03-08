@@ -1,4 +1,4 @@
-#include "ButtonController.h"
+#include "YablButton.h"
 #include "Arduino.h"
 
 namespace Yabl {
