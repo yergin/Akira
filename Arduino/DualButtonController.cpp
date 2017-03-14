@@ -13,8 +13,8 @@ Controller::Controller(int pinA, int pinB) {
   _buttonB = &_button2;
   _buttonA->update();
   _buttonB->update();
-  _buttonA->setCallback(onButtonEvent);
-  _buttonB->setCallback(onButtonEvent);
+  _buttonA->callback(onButtonEvent);
+  _buttonB->callback(onButtonEvent);
 }
 
 void Controller::update() {
@@ -56,11 +56,11 @@ void Controller::update() {
     }
   }
   else if (anyButtonDown) {
-    Button* downBtn = _buttonA->down() ? _buttonA : _buttonB;
-    Button* upBtn = _buttonA->down() ? _buttonB : _buttonA;
+    SingleButton* downBtn = _buttonA->down() ? _buttonA : _buttonB;
+    SingleButton* upBtn = _buttonA->down() ? _buttonB : _buttonA;
     if (!downBtn->gestureIncludes(USER_EVENT) && !upBtn->gestureIncludes(USER_EVENT) && 
         !gestureIncludes(BUTTONS_A_B_TOGETHER, PRESS) && ms > _firstButtonPressed + _simultaneousPressThreshold) {
-      downBtn->triggerUserEvent();
+      downBtn->triggerExclusivePress();
     }
   }
   else if (_buttonA->triggered(RELEASE) || _buttonB->triggered(RELEASE)) {
@@ -194,10 +194,10 @@ void Controller::performRequest(Request request) {
   }
 }
 
-void Controller::onButtonEvent(Button& button, Event event) {
-  Serial.print(button == *Buttons._buttonA ?  "Button A: " : "Button B: ");
+void Controller::onButtonEvent(const EventInfo& info) {
+  Serial.print(info.button == *Buttons._buttonA ?  "Button A: " : "Button B: ");
   
-  switch (event) {
+  switch (info.event) {
     case PRESS: Serial.print("PRESS\n"); break;
     case RELEASE: Serial.print("RELEASE\n"); break;
     case SHORT_RELEASE: Serial.print("SHORT_RELEASE\n"); break;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "YablButton.h"
+#include <Yabl.h>
 
 namespace DualButtons {
 
@@ -17,8 +17,6 @@ enum Request {
   RESET_BUTTONS,
   SWAP_BUTTONS_ON_RELEASE
 };
-
-using namespace Yabl;
 
 class Controller
 {
@@ -40,18 +38,24 @@ public:
   void wakeup(); 
 
 protected:
-    static void onButtonEvent(Button& button, Event event);
+    static void onButtonEvent(const EventInfo& info);
 
 private:
+  class SingleButton : public Button
+  {
+  public:
+    void triggerExclusivePress() { triggerEvent(EXCLUSIVE_PRESS); }
+  };
+  
   void swapButtons();
   void triggerEventForButtonsABTogether(Event event);
   void clearEventsForButtonsABTogether() { _currentEventsForButtonsABTogether = 0; }
   void resetButtonsABTogether();
   
-  Button _button1;
-  Button _button2;
-  Button* _buttonA = 0;
-  Button* _buttonB = 0;
+  SingleButton _button1;
+  SingleButton _button2;
+  SingleButton* _buttonA = 0;
+  SingleButton* _buttonB = 0;
   int _simultaneousPressThreshold = 100;
   int _simultaneousHoldTime = 300;
   bool _buttonsSwapped = false;
