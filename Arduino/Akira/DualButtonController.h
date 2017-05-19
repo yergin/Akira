@@ -4,7 +4,7 @@
 
 namespace DualButtons {
 
-static constexpr Event EXCLUSIVE_PRESS = USER_EVENT;
+static constexpr Event EXCLUSIVE_PRESS = EVENT_EXTENDED_1;
 
 enum ButtonId {
   BUTTON_A = 0,

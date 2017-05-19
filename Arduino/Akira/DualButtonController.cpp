@@ -58,7 +58,7 @@ void Controller::update() {
   else if (anyButtonDown) {
     SingleButton* downBtn = _buttonA->down() ? _buttonA : _buttonB;
     SingleButton* upBtn = _buttonA->down() ? _buttonB : _buttonA;
-    if (!downBtn->gestureIncludes(USER_EVENT) && !upBtn->gestureIncludes(USER_EVENT) && 
+    if (!downBtn->gestureIncludes(EXCLUSIVE_PRESS) && !upBtn->gestureIncludes(EXCLUSIVE_PRESS) && 
         !gestureIncludes(BUTTONS_A_B_TOGETHER, PRESS) && ms > _firstButtonPressed + _simultaneousPressThreshold) {
       downBtn->triggerExclusivePress();
     }
@@ -205,7 +205,7 @@ void Controller::onButtonEvent(const EventInfo& info) {
     case DOUBLE_TAP: Serial.print("DOUBLE_TAP\n"); break;
     case HOLD: Serial.print("HOLD\n"); break;
     case LONG_RELEASE: Serial.print("LONG_RELEASE\n"); break;
-    case USER_EVENT: Serial.print("EXCLUSIVE_PRESS\n"); break;
+    case EVENT_EXTENDED_1: Serial.print("EXCLUSIVE_PRESS\n"); break;
     default: break;
   }
 }
