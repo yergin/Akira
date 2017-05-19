@@ -314,6 +314,15 @@ BatteryAnimation::BatteryAnimation() {
 }
 
 void BatteryAnimation::draw(unsigned int frame) {
+#ifdef DISABLE_BATTERY_LEVEL
+  unsigned int leds = LED_UI_BATT_SPAN / 2 < frame ? LED_UI_BATT_SPAN / 2 : frame;
+  unsigned int midPoint = LED_UI_BATT_START + LED_UI_BATT_SPAN / 2;
+  for (unsigned int i = 0; i < leds; ++i) {
+    CRGB color = colorFromHue(i * (PRESET_COL_BLUE - PRESET_COL_RED) * 256 / (LED_UI_BATT_SPAN / 2));
+    writeLed(midPoint - 1 - i, color);
+    writeLed(midPoint + i, color);
+  }  
+#else
   if (frame % FPS == 0) {
     if (Power.milliVolts() > BATT_MILLIVOLT_CRITICAL) {
       _litLeds = (Power.milliVolts() - BATT_MILLIVOLT_CRITICAL) * LED_UI_BATT_CRITICAL_MAX / (BATT_MILLIVOLT_FULL - BATT_MILLIVOLT_CRITICAL) + LED_UI_BATT_CRITICAL_SPAN;
@@ -344,5 +353,6 @@ void BatteryAnimation::draw(unsigned int frame) {
   for (unsigned int i = LED_UI_BATT_CRITICAL_SPAN + LED_UI_BATT_CRITICAL_OK2; i < LED_UI_BATT_SPAN && i < leds; ++i) {
     writeLed(LED_UI_BATT_START + i, COLOR[PRESET_COL_GREEN]);
   }
+#endif
 }
 

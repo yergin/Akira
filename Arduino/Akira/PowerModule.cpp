@@ -43,7 +43,10 @@ void PowerModule::update() {
   if (_frame++ % BATT_VOLTAGE_FILT_DOWNSAMPLE) {
     return;
   }
-  
+
+#ifdef DISABLE_BATTERY_LEVEL
+  setBatteryState(BATTERY_OK);
+#else
   int milliVolts = (analogRead(BATT_VOLTAGE_PIN) * _battMillivoltMax) >> 10;
   _milliVolts = _milliVolts ? (_milliVolts * ((1 << BATT_VOLTAGE_FILT_EXP) - 1) + milliVolts) >> BATT_VOLTAGE_FILT_EXP : milliVolts;
   if (_milliVolts < _criticalThreshold) {
@@ -55,6 +58,7 @@ void PowerModule::update() {
   else {
     setBatteryState(BATTERY_OK);
   }
+#endif
 
 #ifdef SERIAL_DEBUG
   if ((_frame - 1) % (BATT_VOLTAGE_FILT_DOWNSAMPLE << 4) == 0) {
