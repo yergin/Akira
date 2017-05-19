@@ -206,7 +206,7 @@ void Controller::onButtonEvent(const EventInfo& info) {
     case DOUBLE_TAP: Serial.print("DOUBLE_TAP\n"); break;
     case HOLD: Serial.print("HOLD\n"); break;
     case LONG_RELEASE: Serial.print("LONG_RELEASE\n"); break;
-    case EVENT_EXTENDED_1: Serial.print("EXCLUSIVE_PRESS\n"); break;
+    case EXCLUSIVE_PRESS: Serial.print("EXCLUSIVE_PRESS\n"); break;
     default: break;
   }
 #endif
