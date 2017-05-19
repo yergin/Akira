@@ -195,6 +195,7 @@ void Controller::performRequest(Request request) {
 }
 
 void Controller::onButtonEvent(const EventInfo& info) {
+#ifdef SERIAL_DEBUG
   Serial.print(info.button == *Buttons._buttonA ?  "Button A: " : "Button B: ");
   
   switch (info.event) {
@@ -208,6 +209,7 @@ void Controller::onButtonEvent(const EventInfo& info) {
     case EVENT_EXTENDED_1: Serial.print("EXCLUSIVE_PRESS\n"); break;
     default: break;
   }
+#endif
 }
 
 }
