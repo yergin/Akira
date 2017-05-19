@@ -3,9 +3,6 @@
 #include <Arduino.h>
 #include <FastLED.h>
 
-#define AKIRA_724
-//#define AKIRA_763
-
 //#define INIT_EEPROM
 //#define SERIAL_DEBUG
 //#define DISABLE_SLEEP
@@ -14,11 +11,7 @@
 //#define SUPPORT_BROKEN_LIGHT_STAFF
 
 #ifdef INIT_EEPROM
-#ifdef AKIRA_724
 constexpr int BATT_MILLIVOLT_MAX = 5215;
-#else
-constexpr int BATT_MILLIVOLT_MAX = 5554;
-#endif
 #endif
 
 constexpr int LED_CLOCK_PIN = 7;
@@ -34,13 +27,8 @@ constexpr int BUTTON_B_PIN = 6;
 constexpr int BATT_VOLTAGE_PIN = 21;
 
 constexpr int BATT_MILLIVOLT_FULL = 4200;
-#ifdef AKIRA_763
-constexpr int BATT_MILLIVOLT_LOW = 2700;
-constexpr int BATT_MILLIVOLT_CRITICAL = 2600;
-#else
 constexpr int BATT_MILLIVOLT_LOW = 3100;
 constexpr int BATT_MILLIVOLT_CRITICAL = 3000;
-#endif
 constexpr int BATT_MILLIVOLT_HYSTERESIS = 600;
 constexpr int BATT_MILLIVOLT_OK1 = BATT_MILLIVOLT_LOW + (BATT_MILLIVOLT_HYSTERESIS >> 1);
 constexpr int BATT_MILLIVOLT_OK2 = BATT_MILLIVOLT_LOW + BATT_MILLIVOLT_HYSTERESIS;
@@ -64,17 +52,13 @@ constexpr int LED_DIM_SHIFT = 0;
 constexpr int LED_DIM_SHIFT = 5;
 #endif
 constexpr uint8_t LED_DIM_MIN = 7;
-#ifdef AKIRA_763
 constexpr uint8_t LOW_POWER_MAX_BRIGHTNESS = 63;
-#else
-constexpr uint8_t LOW_POWER_MAX_BRIGHTNESS = 63;
-#endif
 
 constexpr int FPS = 48;
 constexpr unsigned long FRAME_TIME = 1000/FPS;
 
-constexpr int EEPROM_ADDR_BRIGHTNESS = 0;
 constexpr int EEPROM_ADDR_BATT_MILLIVOLT_MAX = 0;
+constexpr int EEPROM_ADDR_BRIGHTNESS = 2;
 constexpr int EEPROM_ADDR_CUE_COUNT = 16;
 constexpr int EEPROM_ADDR_FIRST_CUE = 18;
 constexpr int EEPROM_CUE_SIZE = 2;
