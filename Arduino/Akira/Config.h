@@ -4,15 +4,18 @@
 #include <FastLED.h>
 
 //#define INIT_EEPROM
-//#define SERIAL_DEBUG
+#define SERIAL_DEBUG
 //#define DISABLE_SLEEP
-#define DISABLE_BATTERY_LEVEL
+//#define DISABLE_BATTERY_LEVEL
 //#define EXPERIMENTAL_ANIMATIONS
 //#define SUPPORT_BROKEN_LIGHT_STAFF
 
 #ifdef INIT_EEPROM
-constexpr int BATT_MILLIVOLT_MAX = 5215;
+constexpr int BATT_MILLIVOLT_MAX = 5100;
 #endif
+
+constexpr int DEBUG1_PIN = 0;
+constexpr int DEBUG2_PIN = 1;
 
 constexpr int LED_CLOCK_PIN = 7;
 constexpr int LED_DATA_PIN = 8;
@@ -20,7 +23,6 @@ constexpr int LED_ENABLE_PIN = 9;
 #ifdef SUPPORT_BROKEN_LIGHT_STAFF
 constexpr int LED_ENABLE_PIN2 = 11;
 #endif
-
 constexpr int LED_SENSE_PIN = 10;
 constexpr int BUTTON_A_PIN = 4;
 constexpr int BUTTON_B_PIN = 6;
@@ -63,6 +65,10 @@ constexpr int EEPROM_ADDR_CUE_COUNT = 16;
 constexpr int EEPROM_ADDR_FIRST_CUE = 18;
 constexpr int EEPROM_CUE_SIZE = 2;
 constexpr int MAX_CUES = 100;
+
+constexpr int ERROR_BATTERY_CRITICAL = 0;
+constexpr int ERROR_LED_WONT_TURN_ON = 1;
+constexpr int ERROR_LED_WONT_TURN_OFF = 2;
 
 extern CRGB leds[LED_COUNT];
 extern char transitionMask[LED_COUNT];

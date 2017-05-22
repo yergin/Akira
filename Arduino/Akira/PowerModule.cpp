@@ -1,5 +1,6 @@
 #include "PowerModule.h"
 #include "DualButtonController.h"
+#include "ErrorStatus.h"
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <Snooze.h>
@@ -115,6 +116,7 @@ void PowerModule::turnLedsOn() {
 #ifdef SERIAL_DEBUG
     Serial.println("Attempted to power up LEDs but no voltage detected.");
 #endif
+    Errors.setError(ERROR_LED_WONT_TURN_ON);
     return;
   }
   pinMode(LED_CLOCK_PIN, OUTPUT);
@@ -136,6 +138,7 @@ void PowerModule::turnLedsOff() {
 #ifdef SERIAL_DEBUG
     Serial.println("Failed to power down LEDs.");
 #endif
+    Errors.setError(ERROR_LED_WONT_TURN_OFF);
     FastLED.showColor(CRGB::Black);
     return;
   }  
@@ -149,6 +152,10 @@ void PowerModule::deepSleep() {
   Buttons.sleep();
   FastLED.showColor(CRGB::Black);
   FastLED.delay(5);
+  
+  digitalWrite(DEBUG2_PIN, LOW);  
+  digitalWrite(DEBUG1_PIN, HIGH);
+
 #ifdef DISABLE_SLEEP
   while (digitalRead(BUTTON_A_PIN) == LOW || digitalRead(BUTTON_B_PIN) == LOW) {
     FastLED.delay(5);
@@ -159,6 +166,10 @@ void PowerModule::deepSleep() {
 #else
   Snooze.deepSleep(SnoozeConfig);
 #endif
+
+  digitalWrite(DEBUG1_PIN, LOW);
+  resetVoltage();
+
   Buttons.wakeup();
   if (ledsOn) {
     turnLedsOn();

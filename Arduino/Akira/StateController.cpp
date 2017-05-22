@@ -1,6 +1,7 @@
 #include "StateController.h"
 #include "Config.h"
 #include "DualButtonController.h"
+#include "ErrorStatus.h"
 #include <EEPROM.h>
 
 SleepMode sleepMode;
@@ -222,6 +223,7 @@ void StateController::factoryReset() {
 #ifdef SERIAL_DEBUG
   Serial.println("Factory reset!");
 #endif
+  Errors.clearAllErrors();
   Power.turnLedsOn();
   brightnessMode.reset();
   FastLED.showColor(CRGB::White);
@@ -269,18 +271,29 @@ void StateController::initialize() {
 void StateController::update() {
   Power.update();
   if (Power.batteryState() == BATTERY_CRITICAL) {
-    setOperatingMode(MODE_SLEEP);
+    Errors.setError(ERROR_BATTERY_CRITICAL);
+
+    for (int i = 0; i < 3; ++i) {
+      FastLED.showColor(CRGB::Red);
+      FastLED.delay(200);
+      FastLED.showColor(CRGB::Black);
+      FastLED.delay(200);
+    }
+    
+    setOperatingModeWithCommand(MODE_SLEEP, SLEEP_IMMEDIATE);
   }
   else if (Power.batteryState() == BATTERY_LOW) {
     Power.setLowPowerMode(true);
   }
   else {
+    Errors.clearError(ERROR_BATTERY_CRITICAL);
     Power.setLowPowerMode(false);    
   }
   respondToButtons();
   _modes[_currentMode]->update();
   updateAnimations();
   FastLED.show();
+  Errors.update();
 }  
 
 void StateController::respondToButtons() {
@@ -291,6 +304,8 @@ void StateController::respondToButtons() {
     return;
   }
 
+  digitalWrite(DEBUG2_PIN, HIGH);
+  
   for (int i = 0; i < StateController::transitionTableEntryCount(); ++i) {
     const StateTransition* transition = &stateTransitionTable[i];
     if (transition->currentMode != currentMode() || !Buttons.triggered(transition->button, transition->buttonEvent)) {
