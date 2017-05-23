@@ -1,6 +1,7 @@
 #include "StateController.h"
 #include "Config.h"
 #include "DualButtonController.h"
+#include "ErrorStatus.h"
 #include <EEPROM.h>
 
 SleepMode sleepMode;
@@ -222,6 +223,7 @@ void StateController::factoryReset() {
 #ifdef SERIAL_DEBUG
   Serial.println("Factory reset!");
 #endif
+  Errors.clearAllErrors();
   Power.turnLedsOn();
   brightnessMode.reset();
   FastLED.showColor(CRGB::White);
@@ -269,28 +271,42 @@ void StateController::initialize() {
 void StateController::update() {
   Power.update();
   if (Power.batteryState() == BATTERY_CRITICAL) {
-    setOperatingMode(MODE_SLEEP);
+    if (_currentMode != MODE_SLEEP) {
+      for (int i = 0; i < 3; ++i) {
+        FastLED.showColor(CRGB::Red);
+        delay(200);
+        FastLED.showColor(CRGB::Black);
+        delay(200);
+      }
+
+      Errors.setError(ERROR_BATTERY_CRITICAL);
+      setOperatingModeWithCommand(MODE_SLEEP, SLEEP_IMMEDIATE);
+    }
   }
   else if (Power.batteryState() == BATTERY_LOW) {
     Power.setLowPowerMode(true);
   }
   else {
+    Errors.clearError(ERROR_BATTERY_CRITICAL);
     Power.setLowPowerMode(false);    
   }
   respondToButtons();
   _modes[_currentMode]->update();
   updateAnimations();
   FastLED.show();
+  Errors.update();
 }  
 
 void StateController::respondToButtons() {
   using namespace DualButtons;
-  
+
   Buttons.update();
   if (!Buttons.activity()) {
     return;
   }
 
+  digitalWrite(DEBUG2_PIN, HIGH);
+  
   for (int i = 0; i < StateController::transitionTableEntryCount(); ++i) {
     const StateTransition* transition = &stateTransitionTable[i];
     if (transition->currentMode != currentMode() || !Buttons.triggered(transition->button, transition->buttonEvent)) {
@@ -329,7 +345,7 @@ void StateController::setOperatingModeWithCommand(Mode mode, Command command) {
 
 void StateController::showFirstCue() {
   _currentCue = 0;
-  setNextAnimation(createAnimation(_currentCue));
+  setNextAnimationImmediate(createAnimation(_currentCue));
 }
 
 void StateController::showNextCue() {
@@ -476,6 +492,20 @@ void StateController::storeCuesInEeprom() {
 
 AkiraAnimation* StateController::createAnimation(int index) {
   return AkiraAnimation::create(_cues[index]);
+}
+
+void StateController::setNextAnimationImmediate(AkiraAnimation* animation) {
+  if (_sourceAnimation) {
+    delete _sourceAnimation;
+    _sourceAnimation = 0;
+  }
+  
+  if (_targetAnimation) {
+    delete _targetAnimation;
+  }
+
+  _targetAnimation = animation;
+  _targetAnimation->setMask(0, Animation::OVERLAY);
 }
 
 void StateController::setNextAnimation(AkiraAnimation* animation) {
