@@ -271,16 +271,17 @@ void StateController::initialize() {
 void StateController::update() {
   Power.update();
   if (Power.batteryState() == BATTERY_CRITICAL) {
-    Errors.setError(ERROR_BATTERY_CRITICAL);
+    if (_currentMode != MODE_SLEEP) {
+      for (int i = 0; i < 3; ++i) {
+        FastLED.showColor(CRGB::Red);
+        delay(200);
+        FastLED.showColor(CRGB::Black);
+        delay(200);
+      }
 
-    for (int i = 0; i < 3; ++i) {
-      FastLED.showColor(CRGB::Red);
-      FastLED.delay(200);
-      FastLED.showColor(CRGB::Black);
-      FastLED.delay(200);
+      Errors.setError(ERROR_BATTERY_CRITICAL);
+      setOperatingModeWithCommand(MODE_SLEEP, SLEEP_IMMEDIATE);
     }
-    
-    setOperatingModeWithCommand(MODE_SLEEP, SLEEP_IMMEDIATE);
   }
   else if (Power.batteryState() == BATTERY_LOW) {
     Power.setLowPowerMode(true);
@@ -298,7 +299,7 @@ void StateController::update() {
 
 void StateController::respondToButtons() {
   using namespace DualButtons;
-  
+
   Buttons.update();
   if (!Buttons.activity()) {
     return;
@@ -344,7 +345,7 @@ void StateController::setOperatingModeWithCommand(Mode mode, Command command) {
 
 void StateController::showFirstCue() {
   _currentCue = 0;
-  setNextAnimation(createAnimation(_currentCue));
+  setNextAnimationImmediate(createAnimation(_currentCue));
 }
 
 void StateController::showNextCue() {
@@ -491,6 +492,20 @@ void StateController::storeCuesInEeprom() {
 
 AkiraAnimation* StateController::createAnimation(int index) {
   return AkiraAnimation::create(_cues[index]);
+}
+
+void StateController::setNextAnimationImmediate(AkiraAnimation* animation) {
+  if (_sourceAnimation) {
+    delete _sourceAnimation;
+    _sourceAnimation = 0;
+  }
+  
+  if (_targetAnimation) {
+    delete _targetAnimation;
+  }
+
+  _targetAnimation = animation;
+  _targetAnimation->setMask(0, Animation::OVERLAY);
 }
 
 void StateController::setNextAnimation(AkiraAnimation* animation) {

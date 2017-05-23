@@ -40,6 +40,11 @@ void PowerModule::initialize() {
   _battMillivoltMax = maxMillivolts.val;
 }
 
+void PowerModule::resetVoltage() {
+  _frame = 0;
+  _milliVolts = 0;
+}
+
 void PowerModule::update() {
   if (_frame++ % BATT_VOLTAGE_FILT_DOWNSAMPLE) {
     return;
@@ -153,9 +158,9 @@ void PowerModule::deepSleep() {
   FastLED.showColor(CRGB::Black);
   FastLED.delay(5);
   
-  digitalWrite(DEBUG2_PIN, LOW);  
+  Errors.resetDisplay();
   digitalWrite(DEBUG1_PIN, HIGH);
-
+  
 #ifdef DISABLE_SLEEP
   while (digitalRead(BUTTON_A_PIN) == LOW || digitalRead(BUTTON_B_PIN) == LOW) {
     FastLED.delay(5);

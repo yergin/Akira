@@ -12,7 +12,7 @@ class PowerModule {
 public:
   void initialize();
   void update();
-  void resetVoltage() { _milliVolts = 0; }
+  void resetVoltage();
   int milliVolts() const { return _milliVolts; }
   BatteryState batteryState() const { return _batteryState; }
   bool areLedsOn() const;

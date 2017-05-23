@@ -106,6 +106,7 @@ private:
   void respondToButtons();
   void updateAnimations();
   void setNextAnimation(AkiraAnimation* animation);
+  void setNextAnimationImmediate(AkiraAnimation* animation);
   AkiraAnimation* createAnimation(int index);
   Transition* transition() const { return _targetAnimation && _sourceAnimation ? _targetAnimation->transition() : 0; }
   bool allowFollowingTransition() const { return _sourceAnimation && _sourceAnimation->allowFollowingTransition(); }

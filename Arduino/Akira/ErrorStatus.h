@@ -12,6 +12,7 @@ public:
   void clearError(int code) { _errorVector &= ~(1ul << code); }
   void setError(int code);
   bool isErrorSet(int code) const { return (_errorVector & (1ul << code)) > 0ul; }
+  void resetDisplay();
 
   void update();
 

@@ -74,8 +74,13 @@ void ErrorStatus::update() {
     digitalWrite(LED_BUILTIN, t > tTerminatorStart && (t - tTerminatorStart) < LONG_DUTY);
   }
   else {
-    digitalWrite(LED_BUILTIN, 0);
+    digitalWrite(LED_BUILTIN, LOW);
   }
+}
+
+void ErrorStatus::resetDisplay() {
+  digitalWrite(LED_BUILTIN, LOW);
+  _currentCode = -1;
 }
 
 ErrorStatus Errors;
