@@ -1,12 +1,14 @@
 #include "PowerModule.h"
 #include "DualButtonController.h"
 #include "ErrorStatus.h"
+#include "PersistentData.h"
 #include <Arduino.h>
-#include <EEPROM.h>
+#ifndef DISABLE_SLEEP
 #include <Snooze.h>
 
 SnoozeDigital Digital;
 SnoozeBlock SnoozeConfig(Digital);
+#endif
 
 union UnsignedShort {
   uint16_t val;
@@ -14,23 +16,27 @@ union UnsignedShort {
 };
 
 void PowerModule::initialize() {
+#ifndef DISABLE_SLEEP
   Digital.pinMode(BUTTON_A_PIN, INPUT_PULLUP, FALLING);
   Digital.pinMode(BUTTON_B_PIN, INPUT_PULLUP, FALLING);
+#endif
+#ifndef DISABLE_BATTERY_LEVEL
   analogReference(INTERNAL);
+#endif
 
   UnsignedShort maxMillivolts;
 #ifdef INIT_EEPROM
   maxMillivolts.val = BATT_MILLIVOLT_MAX;
-  EEPROM.write(EEPROM_ADDR_BATT_MILLIVOLT_MAX, maxMillivolts.data[0]);
-  EEPROM.write(EEPROM_ADDR_BATT_MILLIVOLT_MAX + 1, maxMillivolts.data[1]);
+  Persist.writeByte(EEPROM_ADDR_BATT_MILLIVOLT_MAX, maxMillivolts.data[0]);
+  Persist.writeByte(EEPROM_ADDR_BATT_MILLIVOLT_MAX + 1, maxMillivolts.data[1]);
 #ifdef SERIAL_DEBUG
   Serial.print("Storing max battery voltage: ");
   Serial.print(maxMillivolts.val);
   Serial.println("mV");
 #endif
 #else
-  maxMillivolts.data[0] = EEPROM.read(EEPROM_ADDR_BATT_MILLIVOLT_MAX);
-  maxMillivolts.data[1] = EEPROM.read(EEPROM_ADDR_BATT_MILLIVOLT_MAX + 1);
+  maxMillivolts.data[0] = Persist.readByte(EEPROM_ADDR_BATT_MILLIVOLT_MAX);
+  maxMillivolts.data[1] = Persist.readByte(EEPROM_ADDR_BATT_MILLIVOLT_MAX + 1);
 #ifdef SERIAL_DEBUG
   Serial.print("Retrieving max battery voltage: ");
   Serial.print(maxMillivolts.val);
@@ -105,10 +111,15 @@ void PowerModule::setBatteryState(BatteryState state) {
 }
 
 bool PowerModule::areLedsOn() const {
+#ifndef LED_ALWAYS_ON
   return digitalRead(LED_SENSE_PIN) == LOW;
+#else
+  return true;
+#endif
 }
 
 void PowerModule::turnLedsOn() {
+#ifndef LED_ALWAYS_ON
 #ifdef SERIAL_DEBUG
   Serial.println("Turning LEDs on.");
 #endif
@@ -124,11 +135,13 @@ void PowerModule::turnLedsOn() {
     Errors.setError(ERROR_LED_WONT_TURN_ON);
     return;
   }
+#endif
   pinMode(LED_CLOCK_PIN, OUTPUT);
-  pinMode(LED_DATA_PIN, OUTPUT);    
+  pinMode(LED_DATA_PIN, OUTPUT);   
 }
 
 void PowerModule::turnLedsOff() {
+#ifndef LED_ALWAYS_ON
 #ifdef SERIAL_DEBUG
   Serial.println("Turning LEDs off.");
 #endif
@@ -146,7 +159,10 @@ void PowerModule::turnLedsOff() {
     Errors.setError(ERROR_LED_WONT_TURN_OFF);
     FastLED.showColor(CRGB::Black);
     return;
-  }  
+  }
+#else
+  FastLED.showColor(CRGB::Black);  
+#endif
 }
 
 void PowerModule::deepSleep() {
@@ -159,7 +175,9 @@ void PowerModule::deepSleep() {
   FastLED.delay(5);
   
   Errors.resetDisplay();
+#ifdef PIN_DEBUGGING
   digitalWrite(DEBUG1_PIN, HIGH);
+#endif
   
 #ifdef DISABLE_SLEEP
   while (digitalRead(BUTTON_A_PIN) == LOW || digitalRead(BUTTON_B_PIN) == LOW) {
@@ -172,7 +190,10 @@ void PowerModule::deepSleep() {
   Snooze.deepSleep(SnoozeConfig);
 #endif
 
+#ifdef PIN_DEBUGGING
   digitalWrite(DEBUG1_PIN, LOW);
+#endif
+  
   resetVoltage();
 
   Buttons.wakeup();

@@ -1,6 +1,6 @@
 #include "Animations.h"
 #include "PowerModule.h"
-#include <EEPROM.h>
+#include "PersistentData.h"
 
 constexpr AkiraAnimation::CueDescription AkiraAnimation::_demo[];
 
@@ -56,8 +56,8 @@ AkiraAnimation* AkiraAnimation::loadDemoCue(int index) {
 
 AkiraAnimation* AkiraAnimation::loadFromEeprom(int *addr) {
   Cue cue;
-  cue.data[0] = EEPROM.read(*addr);
-  cue.data[1] = EEPROM.read(*addr + 1);
+  cue.data[0] = Persist.readByte(*addr);
+  cue.data[1] = Persist.readByte(*addr + 1);
   *addr += EEPROM_CUE_SIZE;
 
   if (cue.descr.animation > PRESET_ANIM_COUNT) {
@@ -76,8 +76,8 @@ AkiraAnimation* AkiraAnimation::loadFromEeprom(int *addr) {
 }
 
 void AkiraAnimation::saveToEeprom(int *addr) {
-  EEPROM.write(*addr, _cue.data[0]);
-  EEPROM.write(*addr + 1, _cue.data[1]);
+  Persist.writeByte(*addr, _cue.data[0]);
+  Persist.writeByte(*addr + 1, _cue.data[1]);
   *addr += EEPROM_CUE_SIZE;
 }
 

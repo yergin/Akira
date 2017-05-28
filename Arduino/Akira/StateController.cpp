@@ -2,7 +2,7 @@
 #include "Config.h"
 #include "DualButtonController.h"
 #include "ErrorStatus.h"
-#include <EEPROM.h>
+#include "PersistentData.h"
 
 SleepMode sleepMode;
 PerformMode performMode;
@@ -151,11 +151,11 @@ void BrightnessMode::reset() {
 }
 
 void BrightnessMode::save() {
-  EEPROM.write(EEPROM_ADDR_BRIGHTNESS, _currentSetting);
+  Persist.writeByte(EEPROM_ADDR_BRIGHTNESS, _currentSetting);
 }
 
 void BrightnessMode::load() {
-  _currentSetting = EEPROM.read(EEPROM_ADDR_BRIGHTNESS);
+  _currentSetting = Persist.readByte(EEPROM_ADDR_BRIGHTNESS);
   if (_currentSetting >= numLevels()) {
     _currentSetting = numLevels() - 1;
   }
@@ -236,7 +236,7 @@ void StateController::factoryReset() {
 }
 
 void StateController::storeDemoCues() {
-  EEPROM.write(EEPROM_ADDR_CUE_COUNT, AkiraAnimation::demoCueCount());
+  Persist.writeByte(EEPROM_ADDR_CUE_COUNT, AkiraAnimation::demoCueCount());
   int addr = EEPROM_ADDR_FIRST_CUE;
   for (int i = 0; i < AkiraAnimation::demoCueCount(); ++i) {
     AkiraAnimation* animation = AkiraAnimation::loadDemoCue(i);
@@ -305,7 +305,9 @@ void StateController::respondToButtons() {
     return;
   }
 
+#ifdef PIN_DEBUGGING
   digitalWrite(DEBUG2_PIN, HIGH);
+#endif
   
   for (int i = 0; i < StateController::transitionTableEntryCount(); ++i) {
     const StateTransition* transition = &stateTransitionTable[i];
@@ -468,7 +470,7 @@ void StateController::loadCuesFromEeprom() {
 #ifdef SERIAL_DEBUG
   Serial.println("Loading cues.");
 #endif
-  _cueCount = EEPROM.read(EEPROM_ADDR_CUE_COUNT);
+  _cueCount = Persist.readByte(EEPROM_ADDR_CUE_COUNT);
   int addr = EEPROM_ADDR_FIRST_CUE;
   for (int i = 0; i < _cueCount; ++i) {
     AkiraAnimation* animation = AkiraAnimation::loadFromEeprom(&addr);
@@ -481,7 +483,7 @@ void StateController::storeCuesInEeprom() {
 #ifdef SERIAL_DEBUG
   Serial.println("Storing cues.");
 #endif
-  EEPROM.write(EEPROM_ADDR_CUE_COUNT, _cueCount);
+  Persist.writeByte(EEPROM_ADDR_CUE_COUNT, _cueCount);
   int addr = EEPROM_ADDR_FIRST_CUE;
   for (int i = 0; i < _cueCount; ++i) {
     AkiraAnimation* animation = AkiraAnimation::create(_cues[i]);

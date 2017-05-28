@@ -5,28 +5,37 @@
 
 //#define INIT_EEPROM
 #define SERIAL_DEBUG
-//#define DISABLE_SLEEP
-//#define DISABLE_BATTERY_LEVEL
+#define DISABLE_SLEEP
+#define DISABLE_BATTERY_LEVEL
 //#define EXPERIMENTAL_ANIMATIONS
 //#define SUPPORT_BROKEN_LIGHT_STAFF
+#define LED_ALWAYS_ON
 
 #ifdef INIT_EEPROM
-constexpr int BATT_MILLIVOLT_MAX = 5100;
+constexpr int BATT_MILLIVOLT_MAX = 5260;
 #endif
 
+#ifdef PIN_DEBUGGING
 constexpr int DEBUG1_PIN = 0;
 constexpr int DEBUG2_PIN = 1;
+#endif
 
-constexpr int LED_CLOCK_PIN = 7;
-constexpr int LED_DATA_PIN = 8;
+constexpr int LED_CLOCK_PIN = 4;
+constexpr int LED_DATA_PIN = 5;
+
+#ifndef LED_ALWAYS_ON
 constexpr int LED_ENABLE_PIN = 9;
 #ifdef SUPPORT_BROKEN_LIGHT_STAFF
 constexpr int LED_ENABLE_PIN2 = 11;
 #endif
 constexpr int LED_SENSE_PIN = 10;
+#endif
+
 constexpr int BUTTON_A_PIN = 4;
 constexpr int BUTTON_B_PIN = 6;
+#ifndef DISABLE_BATTERY_LEVEL
 constexpr int BATT_VOLTAGE_PIN = 21;
+#endif
 
 constexpr int BATT_MILLIVOLT_FULL = 4200;
 constexpr int BATT_MILLIVOLT_LOW = 3100;

@@ -24,7 +24,7 @@ public:
   void reset();
   void advance();
   bool isCompleted() const { return _currentFrame >= duration(); }
-  virtual unsigned int duration() const;
+  virtual unsigned int duration() const = 0;
   virtual void update() = 0;
   
 protected:
@@ -33,4 +33,3 @@ protected:
 private:
   unsigned int _currentFrame = 0;
 };
-

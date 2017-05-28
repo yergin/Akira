@@ -6,21 +6,25 @@
 void setup() {
   delay(400);
 
+#ifdef PIN_DEBUGGING
   pinMode(DEBUG1_PIN, OUTPUT);
   pinMode(DEBUG2_PIN, OUTPUT);
   digitalWrite(DEBUG1_PIN, LOW);
   digitalWrite(DEBUG2_PIN, LOW);
+#endif
   
 #ifdef SERIAL_DEBUG
   Serial.begin(9600);
   Serial.println("Initialising...");
 #endif
 
+#ifndef LED_ALWAYS_ON
   pinMode(LED_ENABLE_PIN, OUTPUT);
 #ifdef SUPPORT_BROKEN_LIGHT_STAFF
   pinMode(LED_ENABLE_PIN2, OUTPUT);
 #endif
   pinMode(LED_SENSE_PIN, INPUT_PULLUP);
+#endif
   FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR, DATA_RATE_MHZ(1)>(leds, LED_COUNT);
 
   Akira.initialize();
