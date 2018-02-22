@@ -65,21 +65,21 @@ void ErrorStatus::update() {
   
   if (t < tBurstStop) {
     bool inBurst = t % (BURST_DURATION + PAUSE) < BURST_DURATION;
-    digitalWrite(LED_BUILTIN, inBurst && t % (FAST_SHORT_DUTY * 2) < FAST_SHORT_DUTY);
+    digitalWrite(STATUS_LED_PIN, inBurst && t % (FAST_SHORT_DUTY * 2) < FAST_SHORT_DUTY);
   }
   else if (t < tPulseStop) {
-    digitalWrite(LED_BUILTIN, (t - tBurstStop) % (SLOW_SHORT_DUTY * 2) < SLOW_SHORT_DUTY);
+    digitalWrite(STATUS_LED_PIN, (t - tBurstStop) % (SLOW_SHORT_DUTY * 2) < SLOW_SHORT_DUTY);
   }
   else if (t < tStop) {
-    digitalWrite(LED_BUILTIN, t > tTerminatorStart && (t - tTerminatorStart) < LONG_DUTY);
+    digitalWrite(STATUS_LED_PIN, t > tTerminatorStart && (t - tTerminatorStart) < LONG_DUTY);
   }
   else {
-    digitalWrite(LED_BUILTIN, LOW);
+    digitalWrite(STATUS_LED_PIN, LOW);
   }
 }
 
 void ErrorStatus::resetDisplay() {
-  digitalWrite(LED_BUILTIN, LOW);
+  digitalWrite(STATUS_LED_PIN, LOW);
   _currentCode = -1;
 }
 

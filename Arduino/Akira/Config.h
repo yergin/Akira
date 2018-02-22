@@ -65,7 +65,7 @@ constexpr int LED_DIM_SHIFT = 5;
 constexpr uint8_t LED_DIM_MIN = 7;
 constexpr uint8_t LOW_POWER_MAX_BRIGHTNESS = 63;
 
-constexpr int FPS = 48;
+constexpr int FPS = 6;
 constexpr unsigned long FRAME_TIME = 1000/FPS;
 
 constexpr int EEPROM_ADDR_BATT_MILLIVOLT_MAX = 0;

@@ -4,10 +4,10 @@
 #include <EEPROM.h>
 #else
 char DATA_STORE[4096] = { 0, 0,
-                          5,
+                          2,
                           0,   0, 0, 0, 0,   0, 0, 0, 0,   0, 0, 0, 0,
                           1,
-                          0xCC, 1 };
+                          0xCC, 3 };
                           
 #endif
 

@@ -14,7 +14,7 @@ void setup() {
 #endif
   
 #ifdef SERIAL_DEBUG
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.println("Initialising...");
 #endif
 
@@ -25,25 +25,28 @@ void setup() {
 #endif
   pinMode(LED_SENSE_PIN, INPUT_PULLUP);
 #endif
-  FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR, DATA_RATE_MHZ(1)>(leds, LED_COUNT);
+  //FastLED.addLeds<APA102, LED_DATA_PIN, LED_CLOCK_PIN, BGR, DATA_RATE_MHZ(1)>(leds, LED_COUNT);
 
-  Akira.initialize();
+  //Akira.initialize();
 }
 
 void delayForNextFrame() {
   static unsigned long lastMillis = 0;
   unsigned long t = millis();
   if (t - lastMillis >= FRAME_TIME) {
-    FastLED.delay(1);
+    //FastLED.delay(1);
+    delay(1);
   }
   else {
-    FastLED.delay(FRAME_TIME - (t - lastMillis));
+    //FastLED.delay(FRAME_TIME - (t - lastMillis));
+    delay(FRAME_TIME - (t - lastMillis));
   }
   lastMillis = t;
 }
 
 void loop() {
-  Akira.update();
+  //Akira.update();
 
   delayForNextFrame();
+  Serial.println("Hi!");
 }

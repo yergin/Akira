@@ -265,7 +265,8 @@ void StateController::initialize() {
 
   delay(200);
   
-  setOperatingModeWithCommand(MODE_SLEEP, SLEEP_IMMEDIATE);
+  //setOperatingModeWithCommand(MODE_SLEEP, SLEEP_IMMEDIATE);
+  setOperatingModeWithCommand(MODE_PERFORM, PERFORM_FIRST_CUE);
 }
 
 void StateController::update() {

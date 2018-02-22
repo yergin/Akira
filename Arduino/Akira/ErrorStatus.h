@@ -1,12 +1,13 @@
 #pragma once
 
 #include <Arduino.h>
+#define STATUS_LED_PIN 2
 
 class ErrorStatus {
 public:
   static constexpr int MAX_CODES = sizeof(unsigned long) * 8;
 
-  ErrorStatus() { pinMode(LED_BUILTIN, OUTPUT); }
+  ErrorStatus() { pinMode(STATUS_LED_PIN, OUTPUT); }
   
   void clearAllErrors() { _errorVector = 0; }
   void clearError(int code) { _errorVector &= ~(1ul << code); }
